@@ -431,8 +431,83 @@ function selectCategory(catId) {
   });
 }
 
-// ===== スタブ（次コミットで実装）=====
-function startGame() { /* 出題エンジン追加後に実装 */ }
+// ===== ラウンド構築 =====
+// おまかせ: 1ジャンル最大2問・5ジャンル以上(10問÷2=5ジャンル必須)
+// 単一ジャンル指定: ジャンル制限なし
+// 最近20問のIDを優先的に回避し、候補不足時は fallback から補充
+function buildRound(questions, catId, diff, recentIds) {
+  const pool = questions.filter(q =>
+    q.enabled &&
+    (catId === 'all' || q.categoryId === catId) &&
+    q.difficulty === diff
+  );
+
+  const preferred = shuffle(pool.filter(q => !recentIds.includes(q.id)));
+  const fallback  = shuffle(pool.filter(q =>  recentIds.includes(q.id)));
+
+  const selected    = [];
+  const usedIds     = new Set();
+  const usedConcept = new Set();
+  const genreCnt    = {};
+
+  function tryAdd(q, relaxGenre) {
+    if (usedIds.has(q.id)) return false;
+    if (usedConcept.has(q.conceptKey)) return false;
+    if (catId === 'all' && !relaxGenre) {
+      if ((genreCnt[q.categoryId] || 0) >= 2) return false;
+    }
+    usedIds.add(q.id);
+    usedConcept.add(q.conceptKey);
+    genreCnt[q.categoryId] = (genreCnt[q.categoryId] || 0) + 1;
+    selected.push(q);
+    return true;
+  }
+
+  for (const q of preferred) {
+    if (selected.length >= ROUND_SIZE) break;
+    tryAdd(q, false);
+  }
+  for (const q of fallback) {
+    if (selected.length >= ROUND_SIZE) break;
+    tryAdd(q, false);
+  }
+  // おまかせで不足の場合、ジャンル制限を緩和して補充
+  if (catId === 'all' && selected.length < ROUND_SIZE) {
+    for (const q of [...preferred, ...fallback]) {
+      if (selected.length >= ROUND_SIZE) break;
+      tryAdd(q, true);
+    }
+  }
+
+  // 選択肢のシャッフルはラウンド開始時1回のみ
+  return selected.map(q => ({
+    ...q,
+    shuffledChoices: shuffle(q.choices),
+  }));
+}
+
+// ===== ゲーム開始 =====
+let currentRound = [];
+let currentIndex = 0;
+
+function startGame() {
+  if (!quizData) return;
+
+  currentRound = buildRound(
+    quizData.questions,
+    selectedCatId,
+    selectedDiff,
+    state.recentIds || []
+  );
+  currentIndex = 0;
+
+  UICommon.showScreen('game');
+  UICommon.renderProgress(0, ROUND_SIZE);
+  renderQuestion();
+}
+
+// ===== 問題描画（次コミットで実装）=====
+function renderQuestion() { /* 出題UI追加後に実装 */ }
 
 // ===== JSON 読み込み =====
 fetch('data/quiz_questions_300.json')
