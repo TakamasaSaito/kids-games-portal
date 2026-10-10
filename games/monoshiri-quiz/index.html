@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ものしりクイズ">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-512.png">
+<title>ものしりクイズ</title>
+<link rel="stylesheet" href="../../shared/game-shell.css?v=1">
+<style>
+/* ===== カラーテーマ ===== */
+:root {
+  --bg-start: #4776E6;
+  --bg-end:   #8E54E9;
+  --accent:   #FECA57;
+}
+
+/* ===== SELECT SCREEN ===== */
+#screen-select {
+  gap: 2vmin;
+  justify-content: flex-start;
+  padding-top: max(60px, calc(env(safe-area-inset-top) + 56px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.screen-title {
+  font-size: clamp(13px, 3.2vmin, 19px);
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+  width: 100%;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.category-btn {
+  touch-action: manipulation;
+  padding: 0.65em 0.4em;
+  font-size: clamp(12px, 3vmin, 17px);
+  font-weight: 700;
+  background: rgba(255,255,255,0.15);
+  color: var(--white);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  line-height: 1.3;
+}
+.category-btn.omakase {
+  grid-column: 1 / -1;
+  background: rgba(254,202,87,0.18);
+  border-color: rgba(254,202,87,0.6);
+}
+.category-btn.selected {
+  background: rgba(255,255,255,0.9);
+  color: var(--text-dark);
+  border-color: var(--white);
+}
+.category-btn.omakase.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.category-btn:active { transform: scale(0.96); }
+
+.difficulty-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.diff-btn {
+  flex: 1;
+  touch-action: manipulation;
+  padding: 0.65em 0.4em;
+  font-size: clamp(12px, 3vmin, 17px);
+  font-weight: 700;
+  background: rgba(255,255,255,0.15);
+  color: var(--white);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  line-height: 1.3;
+}
+.diff-btn.selected {
+  background: rgba(255,255,255,0.9);
+  color: var(--text-dark);
+  border-color: var(--white);
+}
+.diff-btn:active { transform: scale(0.96); }
+
+/* ===== GAME SCREEN ===== */
+#screen-game {
+  justify-content: space-between;
+  padding-top: max(54px, calc(env(safe-area-inset-top) + 48px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  gap: 1.5vmin;
+}
+
+.quiz-question {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.speak-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+}
+
+.quiz-prompt {
+  font-size: clamp(17px, 5vmin, 30px);
+  font-weight: 700;
+  color: var(--white);
+  text-align: center;
+  line-height: 1.55;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 16px;
+  width: 100%;
+  word-break: break-all;
+}
+
+.choices {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice-card {
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.92);
+  border: 3px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s, background 0.15s, border-color 0.15s, opacity 0.15s;
+  min-height: 56px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.choice-card:not(.locked):active { transform: scale(0.97); }
+.choice-card.locked { cursor: default; }
+.choice-card.correct {
+  background: #d4edda;
+  border-color: #28a745;
+}
+.choice-card.wrong {
+  background: #f8d7da;
+  border-color: #dc3545;
+  opacity: 0.5;
+}
+
+.choice-speak {
+  flex-shrink: 0;
+  touch-action: manipulation;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: rgba(0,0,0,0.07);
+  border-radius: 50%;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.choice-speak:active { background: rgba(0,0,0,0.14); }
+
+.choice-label {
+  font-size: clamp(15px, 4.2vmin, 24px);
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.3;
+  flex: 1;
+}
+
+.feedback-area {
+  width: 100%;
+  max-width: 440px;
+  min-height: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.retry-msg {
+  font-size: clamp(14px, 3.5vmin, 20px);
+  font-weight: 700;
+  color: #ffe082;
+  text-align: center;
+  padding: 6px 0;
+}
+
+.explanation-box {
+  font-size: clamp(13px, 3.3vmin, 19px);
+  color: var(--white);
+  text-align: center;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 12px;
+  line-height: 1.5;
+}
+
+.action-row {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.skip-btn {
+  touch-action: manipulation;
+  padding: 0.55em 1.6em;
+  font-size: clamp(13px, 3.3vmin, 19px);
+  font-weight: 700;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.85);
+  border: 1.5px solid rgba(255,255,255,0.35);
+  border-radius: 50px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.skip-btn:active { transform: scale(0.95); }
+
+.next-q-btn {
+  flex: 1;
+  max-width: 200px;
+  font-size: clamp(16px, 4vmin, 24px);
+  padding: 0.55em 1em;
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="screen-splash" class="screen active">
+  <span class="splash-fox" aria-hidden="true">💡</span>
+  <div class="splash-title">ものしり<br>クイズ</div>
+</div>
+
+<!-- START SCREEN -->
+<div id="screen-start" class="screen">
+  <span class="character-idle" id="char-start" aria-hidden="true">🦉</span>
+  <div class="app-title">ものしり<br>クイズ</div>
+  <div class="app-subtitle">なにをしっているかな？</div>
+  <button class="btn-primary" id="btn-start" aria-label="はじめる">はじめる</button>
+  <button class="gear-btn" id="btn-gear" aria-label="せってい">⚙
+    <svg class="gear-ring" viewBox="0 0 54 54" aria-hidden="true">
+      <circle class="gear-ring-fill" cx="27" cy="27" r="27"/>
+    </svg>
+  </button>
+</div>
+
+<!-- SELECT SCREEN (extraScreens で登録) -->
+<div id="screen-select" class="screen">
+  <button class="home-btn" id="btn-home-select" aria-label="ホームにもどる">🏠</button>
+  <div class="screen-title">ジャンルをえらぼう</div>
+  <div class="category-grid" id="category-grid">
+    <!-- JS で生成 -->
+  </div>
+  <div class="screen-title">むずかしさをえらぼう</div>
+  <div class="difficulty-row">
+    <button class="diff-btn selected" data-diff="1">やさしい</button>
+    <button class="diff-btn" data-diff="2">ちょっと<br>考える</button>
+  </div>
+  <button class="btn-primary" id="btn-start-game" aria-label="はじめる">はじめる</button>
+  <button class="btn-secondary" id="btn-back-start">もどる</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <button class="home-btn" id="btn-home-game" aria-label="ホームにもどる">🏠</button>
+
+  <div class="progress-area">
+    <span class="progress-label" id="progress-label">0 / 10</span>
+    <div class="progress-dots" id="progress-dots"></div>
+  </div>
+
+  <div class="quiz-question">
+    <div class="quiz-prompt" id="quiz-prompt" aria-live="polite"></div>
+    <div class="speak-row">
+      <span class="character-game" id="char-game" aria-hidden="true">🦉</span>
+      <button class="speak-btn" id="btn-speak" aria-label="もういちどよむ">🔊</button>
+    </div>
+  </div>
+
+  <div class="choices" id="choices" role="group" aria-label="こたえをえらぼう"></div>
+
+  <div class="feedback-area">
+    <div class="retry-msg" id="retry-msg" hidden>もういちど えらんでみよう</div>
+    <div class="explanation-box" id="explanation" hidden></div>
+  </div>
+
+  <div class="action-row">
+    <button class="skip-btn" id="skip-btn">スキップ</button>
+    <button class="btn-primary next-q-btn" id="btn-next-q" hidden>つぎへ →</button>
+  </div>
+</div>
+
+<!-- CLEAR SCREEN -->
+<div id="screen-clear" class="screen">
+  <div class="clear-title">すごい！</div>
+  <div class="clear-character" aria-hidden="true">🦉✨</div>
+  <div class="clear-subtitle" id="clear-subtitle">10もん あそんだね！</div>
+  <div class="clear-buttons">
+    <button class="btn-primary" id="btn-next" style="width:100%">もういちど</button>
+    <button class="btn-secondary" id="btn-quit" style="width:100%">おわる</button>
+  </div>
+  <div class="confetti-container" id="confetti-container"></div>
+</div>
+
+<!-- PARENT MENU MODAL -->
+<div class="modal-overlay" id="modal-parent">
+  <div class="modal-box">
+    <div class="modal-title">⚙ せってい（おとなむけ）</div>
+    <div class="volume-toggle">
+      <span>おと</span>
+      <button class="toggle-switch on" id="toggle-volume" aria-label="音量切り替え"></button>
+      <span id="volume-label">オン</span>
+    </div>
+    <button class="btn-modal danger" id="btn-reset-confirm">しんちょくをリセット</button>
+    <button class="btn-modal cancel" id="btn-parent-close" style="width:100%">とじる</button>
+  </div>
+</div>
+
+<!-- RESET CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal-box">
+    <div class="modal-title">リセットしますか？</div>
+    <div class="modal-body">ゲームのしんちょくが すべてきえます。</div>
+    <div class="modal-row">
+      <button class="btn-modal danger" id="btn-reset-do">リセット</button>
+      <button class="btn-modal cancel" id="btn-reset-cancel">もどる</button>
+    </div>
+  </div>
+</div>
+
+<!-- shared/ 読み込み順は decisions/001-shared-design.md のとおり -->
+<script src="../../shared/audio-engine.js?v=1"></script>
+<script src="../../shared/audio-player.js?v=1"></script>
+<script src="../../shared/speech.js?v=1"></script>
+<script src="../../shared/game-state.js?v=1"></script>
+<script src="../../shared/ui-common.js?v=1"></script>
+<script>
+'use strict';
+
+// ===== 定数 =====
+const ROUND_SIZE  = 10;  // JSON の defaults.roundSize(5) をコード側で上書き
+const STORAGE_KEY = 'monoshiri-quiz-v1';
+
+// ===== ゲーム状態 =====
+const GameState = createGameState(STORAGE_KEY, () => ({
+  totalCorrect: 0,
+  recentIds: [],
+}));
+let state = null;
+
+let quizData      = null;
+let loadError     = false;
+let selectedCatId = 'all';
+let selectedDiff  = 1;
+
+// ===== ユーティリティ =====
+function shuffle(arr) {
+  arr = arr.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ===== 選択画面の構築 =====
+function buildSelectScreen() {
+  if (!quizData) return;
+
+  const grid = document.getElementById('category-grid');
+  grid.innerHTML = '';
+
+  const omakase = document.createElement('button');
+  omakase.className = 'category-btn omakase' + (selectedCatId === 'all' ? ' selected' : '');
+  omakase.dataset.catId = 'all';
+  omakase.textContent = 'おまかせ';
+  omakase.addEventListener('click', () => selectCategory('all'));
+  grid.appendChild(omakase);
+
+  quizData.categories.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'category-btn' + (selectedCatId === cat.id ? ' selected' : '');
+    btn.dataset.catId = cat.id;
+    btn.textContent = cat.name;
+    btn.addEventListener('click', () => selectCategory(cat.id));
+    grid.appendChild(btn);
+  });
+
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.classList.toggle('selected', Number(btn.dataset.diff) === selectedDiff);
+  });
+}
+
+function selectCategory(catId) {
+  selectedCatId = catId;
+  document.querySelectorAll('.category-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.catId === catId);
+  });
+}
+
+// ===== スタブ（次コミットで実装）=====
+function startGame() { /* 出題エンジン追加後に実装 */ }
+
+// ===== JSON 読み込み =====
+fetch('data/quiz_questions_300.json')
+  .then(r => r.json())
+  .then(data => {
+    quizData = data;
+    buildSelectScreen();
+  })
+  .catch(() => {
+    loadError = true;
+  });
+
+// ===== BOOT =====
+state = GameState.load();
+
+UICommon.init({
+  // R1: UICommon が btn-start タップ時に AudioEngine.resume / AudioPlayer.unlock /
+  //     Speech.init を同期的に先頭で呼ぶ
+  onStart: () => {
+    if (!quizData || loadError) return;
+    buildSelectScreen();
+    UICommon.showScreen('select');
+  },
+  onSpeakGame: () => { /* 出題UI追加後に実装 */ },
+  onNextClear: () => {
+    buildSelectScreen();
+    UICommon.showScreen('select');
+  },
+  onReset: () => {
+    state = GameState.reset();
+  },
+  extraScreens: { select: document.getElementById('screen-select') },
+});
+
+// ===== SELECT SCREEN イベント =====
+
+document.getElementById('btn-home-select').addEventListener('click', () => {
+  AudioEngine.playClick();
+  Speech.cancel();
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'go-home' }, '*');
+  } else {
+    UICommon.showScreen('start');
+  }
+});
+
+document.getElementById('btn-back-start').addEventListener('click', () => {
+  AudioEngine.playClick();
+  UICommon.showScreen('start');
+});
+
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedDiff = Number(btn.dataset.diff);
+    document.querySelectorAll('.diff-btn').forEach(b =>
+      b.classList.toggle('selected', b === btn)
+    );
+    AudioEngine.playClick();
+  });
+});
+
+document.getElementById('btn-start-game').addEventListener('click', () => {
+  AudioEngine.playClick();
+  startGame();
+});
+</script>
+</body>
+</html>
