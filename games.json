@@ -1,0 +1,66 @@
+[
+  {
+    "id": "hiragana-hunt",
+    "title": "ひらがなたからさがし",
+    "subtitle": "もじをさがしてみよう！",
+    "emoji": "🦊",
+    "path": "games/hiragana-hunt/",
+    "status": "coming-soon"
+  },
+  {
+    "id": "counting-game",
+    "title": "いちにのぽん!",
+    "subtitle": "かずをかぞえてみよう！",
+    "emoji": "🦊",
+    "path": "games/counting-game/",
+    "status": "coming-soon"
+  },
+  {
+    "id": "compare-game",
+    "title": "くらべっこ",
+    "subtitle": "どっちがおおきいかな？",
+    "emoji": "🦊",
+    "path": "games/compare-game/",
+    "status": "coming-soon"
+  },
+  {
+    "id": "shiritori",
+    "title": "しりとり",
+    "subtitle": "ことばをつなげよう！",
+    "emoji": "🎯",
+    "path": null,
+    "status": "coming-soon"
+  },
+  {
+    "id": "monoshiri-quiz",
+    "title": "ものしりクイズ",
+    "subtitle": "しらないことをおぼえよう！",
+    "emoji": "💡",
+    "path": null,
+    "status": "coming-soon"
+  },
+  {
+    "id": "meiro",
+    "title": "めいろ",
+    "subtitle": "ゴールまでいこう！",
+    "emoji": "🗺",
+    "path": null,
+    "status": "coming-soon"
+  },
+  {
+    "id": "tarinai-kazu",
+    "title": "たりないかず",
+    "subtitle": "かくれたかずはなにかな？",
+    "emoji": "🔢",
+    "path": null,
+    "status": "coming-soon"
+  },
+  {
+    "id": "tsugi-wa-naniiro",
+    "title": "つぎはなにいろ?",
+    "subtitle": "いろをあてよう！",
+    "emoji": "🌈",
+    "path": null,
+    "status": "coming-soon"
+  }
+]
