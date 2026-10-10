@@ -26,10 +26,17 @@
   - localStorage 記録と保護者設定
   - games.json の status を `"live"` に変更
 
+- [x] **ステップ7**: 実機(iPhone)フィードバック対応
+  - ホーム画面アイコン追加 (icons/icon-180.png, icon-512.png)
+  - 読み上げ形式: 「問題文。1、〇〇。2、〇〇。3、〇〇。えらんでね」、カードに番号バッジ
+  - 正解後の解説表示・読み上げを廃止
+  - 選択画面修正: iOS Safari スクロール(-webkit-overflow-scrolling: touch)、cat.name→cat.labelバグ修正、ジャンル絵文字追加
+  - 難易度(やさしい/ちょっと考える) → 年齢(2さい/3さい/4さい)、デフォルト3さい、monoshiri_age_map.json 追加
+
 ## 近日公開（予定）
 
 しりとり / めいろ / たりないかず / つぎはなにいろ?
 
 ## 次の一手
 
-ステップ5-1: compare-game を shared/ に移行する（試験台）。
+ステップ7の動作確認（iPhone 実機でジャンル・年齢選択 → ゲーム → クリア を通す）。
