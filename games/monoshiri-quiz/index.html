@@ -506,8 +506,128 @@ function startGame() {
   renderQuestion();
 }
 
-// ===== 問題描画（次コミットで実装）=====
-function renderQuestion() { /* 出題UI追加後に実装 */ }
+// ===== 問題描画 =====
+let answerLocked = false;
+
+function renderQuestion() {
+  const q = currentRound[currentIndex];
+  answerLocked = false;
+
+  document.getElementById('quiz-prompt').textContent = q.prompt;
+  document.getElementById('retry-msg').hidden    = true;
+  document.getElementById('explanation').hidden  = true;
+  document.getElementById('btn-next-q').hidden   = true;
+  document.getElementById('skip-btn').hidden     = false;
+
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+
+  q.shuffledChoices.forEach(choice => {
+    const card = document.createElement('div');
+    card.className = 'choice-card';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.dataset.choiceId = choice.id;
+
+    const speakBtn = document.createElement('button');
+    speakBtn.className = 'choice-speak';
+    speakBtn.setAttribute('aria-label', choice.spokenLabel + ' をきく');
+    speakBtn.textContent = '🔊';
+    speakBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      Speech.cancel();
+      Speech.speak(choice.spokenLabel);
+    });
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'choice-label';
+    labelEl.textContent = choice.label;
+
+    card.appendChild(speakBtn);
+    card.appendChild(labelEl);
+    card.addEventListener('click', () => handleAnswer(q, choice));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleAnswer(q, choice);
+      }
+    });
+    choicesEl.appendChild(card);
+  });
+
+  UICommon.renderProgress(currentIndex, ROUND_SIZE);
+
+  // 問題文と全選択肢をまとめて読み上げ
+  Speech.speak(
+    q.spokenPrompt + '。' +
+    q.shuffledChoices.map(c => c.spokenLabel).join('。') + '。'
+  );
+}
+
+// ===== 回答処理 =====
+function handleAnswer(q, choice) {
+  if (answerLocked) return;
+
+  Speech.cancel();
+
+  const isCorrect = choice.id === q.correctChoiceId;
+  const cards = document.querySelectorAll('#choices .choice-card');
+
+  if (isCorrect) {
+    answerLocked = true;
+    cards.forEach(card => {
+      card.classList.add('locked');
+      if (card.dataset.choiceId === choice.id) card.classList.add('correct');
+    });
+
+    document.getElementById('retry-msg').hidden  = true;
+    document.getElementById('skip-btn').hidden   = true;
+    document.getElementById('btn-next-q').hidden = false;
+
+    const expEl = document.getElementById('explanation');
+    expEl.textContent = q.explanation;
+    expEl.hidden = false;
+
+    AudioEngine.playCorrect();
+    UICommon.jumpCharacter();
+    UICommon.spawnStars(document.querySelector('#choices .choice-card.correct'));
+
+    Speech.speak(q.spokenExplanation);
+  } else {
+    // 外したカードを無効化し、残りは選び直せる
+    cards.forEach(card => {
+      if (card.dataset.choiceId === choice.id) {
+        card.classList.add('wrong', 'locked');
+      }
+    });
+    document.getElementById('retry-msg').hidden = false;
+    AudioEngine.playWrong();
+    Speech.speak('もういちど えらんでみよう');
+  }
+}
+
+// ===== 次の問題へ進む =====
+function advanceQuestion() {
+  currentIndex++;
+  UICommon.renderProgress(currentIndex, ROUND_SIZE);
+
+  if (currentIndex >= currentRound.length) {
+    // recentIds を更新して保存
+    const roundIds = currentRound.map(q => q.id);
+    state.recentIds = [...(state.recentIds || []), ...roundIds].slice(-20);
+    GameState.save(state);
+
+    setTimeout(() => {
+      AudioEngine.playClear();
+      document.getElementById('clear-subtitle').textContent =
+        currentRound.length + 'もん あそんだね！';
+      UICommon.spawnConfetti();
+      UICommon.showScreen('clear');
+    }, 800);
+  } else {
+    renderQuestion();
+  }
+}
 
 // ===== JSON 読み込み =====
 fetch('data/quiz_questions_300.json')
@@ -531,7 +651,14 @@ UICommon.init({
     buildSelectScreen();
     UICommon.showScreen('select');
   },
-  onSpeakGame: () => { /* 出題UI追加後に実装 */ },
+  onSpeakGame: () => {
+    if (!currentRound[currentIndex]) return;
+    const q = currentRound[currentIndex];
+    Speech.speak(
+      q.spokenPrompt + '。' +
+      q.shuffledChoices.map(c => c.spokenLabel).join('。') + '。'
+    );
+  },
   onNextClear: () => {
     buildSelectScreen();
     UICommon.showScreen('select');
@@ -572,6 +699,21 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
 document.getElementById('btn-start-game').addEventListener('click', () => {
   AudioEngine.playClick();
   startGame();
+});
+
+// ===== GAME SCREEN イベント =====
+
+document.getElementById('skip-btn').addEventListener('click', () => {
+  if (answerLocked) return;
+  Speech.cancel();
+  AudioEngine.playClick();
+  advanceQuestion();
+});
+
+document.getElementById('btn-next-q').addEventListener('click', () => {
+  Speech.cancel();
+  AudioEngine.playClick();
+  advanceQuestion();
 });
 </script>
 </body>
