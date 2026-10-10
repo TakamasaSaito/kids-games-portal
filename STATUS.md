@@ -16,7 +16,7 @@
   - **追加予定の5本を作る前に実施する**
   - [x] **5-0**: shared/ 6ファイル作成 (game-shell.css / audio-engine.js / audio-player.js / speech.js / game-state.js / ui-common.js)、決定メモ追加 (docs/decisions/001-shared-design.md)
   - [x] **5-1**: compare-game を shared/ に移行（試験台）
-  - [ ] **5-2**: counting-game を shared/ に移行
+  - [x] **5-2**: counting-game を shared/ に移行
   - [ ] **5-3**: hiragana-hunt を shared/ に移行
   - [ ] **5-4**: games/_template/ 作成
 

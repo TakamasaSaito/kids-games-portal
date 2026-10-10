@@ -8,175 +8,9 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-512.png">
 <title>いちにのぽん!</title>
+<link rel="stylesheet" href="../../shared/game-shell.css?v=1">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg-start: #667eea;
-  --bg-end: #764ba2;
-  --accent: #FECA57;
-  --white: #fff;
-  --text-dark: #2d3436;
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden;
-  font-family: -apple-system, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
-  user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-}
-
-body {
-  background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-}
-
-.screen {
-  display: none;
-  width: 100%;
-  height: 100%;
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 16px);
-  position: absolute;
-  inset: 0;
-}
-.screen.active { display: flex; }
-
-/* ===== START SCREEN ===== */
-#screen-start { gap: 4vmin; position: relative; }
-
-.app-title {
-  font-size: clamp(32px, 10vmin, 72px);
-  font-weight: 900;
-  color: var(--white);
-  text-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  text-align: center;
-  line-height: 1.2;
-}
-
-.app-subtitle {
-  font-size: clamp(16px, 4vmin, 28px);
-  color: rgba(255,255,255,0.85);
-  text-align: center;
-}
-
-.character-idle {
-  font-size: clamp(60px, 18vmin, 120px);
-  animation: float 3s ease-in-out infinite;
-  display: block;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.btn-primary {
-  touch-action: manipulation;
-  background: var(--accent);
-  color: var(--text-dark);
-  border: none;
-  border-radius: 50px;
-  font-size: clamp(22px, 6vmin, 42px);
-  font-weight: 900;
-  padding: 0.6em 2em;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);
-  transition: transform 0.1s, box-shadow 0.1s;
-  -webkit-tap-highlight-color: transparent;
-}
-.btn-primary:active { transform: scale(0.95); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-
-.btn-secondary {
-  touch-action: manipulation;
-  background: rgba(255,255,255,0.25);
-  color: var(--white);
-  border: 2px solid rgba(255,255,255,0.6);
-  border-radius: 50px;
-  font-size: clamp(14px, 3.5vmin, 24px);
-  font-weight: 700;
-  padding: 0.5em 1.5em;
-  cursor: pointer;
-  transition: transform 0.1s, background 0.1s;
-  -webkit-tap-highlight-color: transparent;
-}
-.btn-secondary:active { transform: scale(0.95); background: rgba(255,255,255,0.35); }
-
-.gear-btn {
-  touch-action: none;
-  -webkit-touch-callout: none;
-  user-select: none;
-  position: fixed;
-  bottom: max(16px, env(safe-area-inset-bottom));
-  right: max(16px, env(safe-area-inset-right));
-  background: rgba(255,255,255,0.15);
-  border: none;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  font-size: 22px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-  z-index: 100;
-}
-.gear-btn.holding { background: rgba(255,255,255,0.30); }
-.gear-ring {
-  position: absolute;
-  inset: -5px;
-  width: calc(100% + 10px);
-  height: calc(100% + 10px);
-  transform: rotate(-90deg);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.gear-btn.holding .gear-ring { opacity: 1; }
-.gear-ring-fill {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 3.5;
-  stroke-linecap: round;
-  stroke-dasharray: 169.6;
-  stroke-dashoffset: 169.6;
-  transition: none;
-}
-.gear-btn.holding .gear-ring-fill {
-  stroke-dashoffset: 0;
-  transition: stroke-dashoffset 3s linear;
-}
-
-.home-btn {
-  touch-action: manipulation;
-  position: absolute;
-  top: max(10px, env(safe-area-inset-top));
-  left: max(10px, env(safe-area-inset-left));
-  background: rgba(255,255,255,0.18);
-  border: none;
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-  z-index: 10;
-}
-.home-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.9); }
+/* ===== counting-game 固有 CSS ===== */
 
 /* ===== GAME SCREEN ===== */
 #screen-game {
@@ -200,36 +34,6 @@ body {
   font-weight: 900;
   color: var(--white);
   text-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-.speak-btn {
-  touch-action: manipulation;
-  background: rgba(255,255,255,0.25);
-  border: 2px solid rgba(255,255,255,0.6);
-  border-radius: 50%;
-  width: clamp(44px, 10vmin, 64px);
-  height: clamp(44px, 10vmin, 64px);
-  font-size: clamp(20px, 5vmin, 32px);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-  flex-shrink: 0;
-}
-.speak-btn:active { transform: scale(0.9); }
-
-.character-game {
-  font-size: clamp(32px, 8vmin, 60px);
-  transition: transform 0.2s;
-  line-height: 1;
-}
-.character-game.jump { animation: jump 0.5s ease-out; }
-@keyframes jump {
-  0% { transform: translateY(0) scale(1); }
-  30% { transform: translateY(-20px) scale(1.1); }
-  60% { transform: translateY(-8px) scale(1.05); }
-  100% { transform: translateY(0) scale(1); }
 }
 
 /* ===== EMOJI FIELD ===== */
@@ -324,20 +128,20 @@ body {
   border-color: #f39c12;
 }
 @keyframes bounce {
-  0% { transform: scale(1); }
-  30% { transform: scale(1.25); }
-  60% { transform: scale(0.95); }
-  80% { transform: scale(1.08); }
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.25); }
+  60%  { transform: scale(0.95); }
+  80%  { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
 
 .answer-btn.wrong { animation: shake 0.4s ease-out; }
 @keyframes shake {
-  0% { transform: translateX(0); }
-  20% { transform: translateX(-8px); }
-  40% { transform: translateX(8px); }
-  60% { transform: translateX(-5px); }
-  80% { transform: translateX(5px); }
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-8px); }
+  40%  { transform: translateX(8px); }
+  60%  { transform: translateX(-5px); }
+  80%  { transform: translateX(5px); }
   100% { transform: translateX(0); }
 }
 
@@ -347,232 +151,10 @@ body {
 }
 @keyframes pulse-hint {
   0%, 100% { box-shadow: 0 4px 16px rgba(0,0,0,0.15), 0 0 0 0 rgba(254,202,87,0.7); }
-  50% { box-shadow: 0 4px 16px rgba(0,0,0,0.15), 0 0 0 12px rgba(254,202,87,0); }
+  50%       { box-shadow: 0 4px 16px rgba(0,0,0,0.15), 0 0 0 12px rgba(254,202,87,0); }
 }
 
-/* ===== PROGRESS ===== */
-.progress-area {
-  display: flex;
-  align-items: center;
-  gap: 1.5vmin;
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 0.5em;
-  flex-shrink: 0;
-}
-
-.progress-label {
-  color: rgba(255,255,255,0.8);
-  font-size: clamp(12px, 3vmin, 18px);
-  font-weight: 700;
-}
-
-.progress-dots { display: flex; gap: clamp(4px, 1.5vmin, 8px); }
-
-.progress-dot {
-  width: clamp(10px, 2.5vmin, 16px);
-  height: clamp(10px, 2.5vmin, 16px);
-  border-radius: 50%;
-  background: rgba(255,255,255,0.3);
-  border: 2px solid rgba(255,255,255,0.5);
-  transition: background 0.2s, transform 0.2s;
-}
-.progress-dot.filled {
-  background: var(--accent);
-  border-color: #f39c12;
-  transform: scale(1.1);
-}
-
-/* ===== CLEAR SCREEN ===== */
-#screen-clear { gap: 3vmin; position: relative; overflow: hidden; }
-
-.clear-title {
-  font-size: clamp(36px, 12vmin, 80px);
-  font-weight: 900;
-  color: var(--accent);
-  text-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  animation: pop-in 0.5s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes pop-in {
-  from { transform: scale(0.3); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.clear-character {
-  font-size: clamp(64px, 20vmin, 130px);
-  animation: celebrate 0.6s ease-out 0.3s both;
-}
-@keyframes celebrate {
-  0% { transform: scale(0) rotate(-20deg); }
-  60% { transform: scale(1.2) rotate(10deg); }
-  100% { transform: scale(1) rotate(0deg); }
-}
-
-.clear-subtitle {
-  font-size: clamp(18px, 5vmin, 36px);
-  color: var(--white);
-  font-weight: 700;
-  text-align: center;
-}
-
-.clear-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 2vmin;
-  align-items: center;
-  width: 100%;
-  max-width: min(320px, 85vw);
-}
-
-/* ===== CONFETTI ===== */
-.confetti-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 200;
-  overflow: hidden;
-}
-
-.confetti-piece {
-  position: absolute;
-  top: -20px;
-  animation: confetti-fall linear forwards;
-  border-radius: 2px;
-}
-@keyframes confetti-fall {
-  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-}
-
-/* ===== STAR BURST ===== */
-.star-burst {
-  position: fixed;
-  pointer-events: none;
-  z-index: 150;
-  font-size: clamp(20px, 5vmin, 36px);
-  animation: star-fly 0.8s ease-out forwards;
-}
-@keyframes star-fly {
-  0% { transform: translate(0,0) scale(0.5); opacity: 1; }
-  100% { transform: translate(var(--dx), var(--dy)) scale(1.2); opacity: 0; }
-}
-
-/* ===== PARENT MENU ===== */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  z-index: 500;
-  align-items: center;
-  justify-content: center;
-}
-.modal-overlay.active { display: flex; }
-
-.modal-box {
-  background: var(--white);
-  border-radius: 24px;
-  padding: 1.5em;
-  width: min(340px, 92vw);
-  max-height: 90vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-  align-items: center;
-}
-
-.modal-title {
-  font-size: clamp(16px, 4.5vmin, 22px);
-  font-weight: 900;
-  color: var(--text-dark);
-}
-
-.modal-body {
-  font-size: clamp(14px, 3.5vmin, 18px);
-  color: #636e72;
-  text-align: center;
-}
-
-.modal-row { display: flex; gap: 1em; width: 100%; justify-content: center; }
-
-.btn-modal {
-  touch-action: manipulation;
-  flex: 1;
-  border: none;
-  border-radius: 50px;
-  padding: 0.7em 1em;
-  font-size: clamp(14px, 3.5vmin, 18px);
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.btn-modal.danger { background: #e17055; color: var(--white); }
-.btn-modal.cancel { background: #dfe6e9; color: var(--text-dark); }
-.btn-modal:active { transform: scale(0.95); }
-
-.volume-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.8em;
-  font-size: clamp(14px, 3.5vmin, 18px);
-  font-weight: 700;
-  color: var(--text-dark);
-}
-
-.toggle-switch {
-  touch-action: manipulation;
-  width: 52px;
-  height: 28px;
-  background: #dfe6e9;
-  border-radius: 14px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s;
-  border: none;
-  flex-shrink: 0;
-}
-.toggle-switch.on { background: #54A0FF; }
-.toggle-switch::after {
-  content: '';
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  background: var(--white);
-  border-radius: 50%;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.2s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-.toggle-switch.on::after { transform: translateX(24px); }
-
-.modal-credit {
-  font-size: clamp(10px, 2.5vmin, 12px);
-  color: #b2bec3;
-  text-align: center;
-  line-height: 1.4;
-}
-
-/* ===== PARENT STATS ===== */
-.parent-stats-area {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4em;
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: clamp(13px, 3vmin, 15px);
-  color: var(--text-dark);
-  padding: 0.2em 0.4em;
-  border-bottom: 1px solid #f0f0f0;
-}
-.stat-row strong { font-weight: 900; }
-
+/* ===== 親メニュー統計 (counting-game 固有) ===== */
 .num-stats-label {
   font-size: clamp(12px, 2.8vmin, 14px);
   font-weight: 700;
@@ -609,39 +191,12 @@ body {
   line-height: 1;
 }
 
-/* ===== SPLASH SCREEN ===== */
-#screen-splash { gap: 5vmin; cursor: pointer; }
-.splash-fox {
-  font-size: clamp(90px, 24vmin, 160px);
-  display: block;
-  animation: splash-bounce 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-.splash-title {
-  font-size: clamp(28px, 9vmin, 64px);
-  font-weight: 900;
-  color: var(--white);
-  text-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  text-align: center;
-  line-height: 1.2;
-  animation: splash-fadein 0.5s ease both 0.55s;
-}
-@keyframes splash-bounce {
-  0%   { transform: scale(0) translateY(-50px); opacity: 0; }
-  55%  { transform: scale(1.18) translateY(0);  opacity: 1; }
-  75%  { transform: scale(0.93) translateY(0); }
-  100% { transform: scale(1)    translateY(0);  opacity: 1; }
-}
-@keyframes splash-fadein {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* reduced motion */
+/* reduced motion (counting-game 固有アニメ) */
 @media (prefers-reduced-motion: reduce) {
-  .character-idle, .character-game.jump, .answer-btn.correct,
-  .answer-btn.wrong, .answer-btn.hint-pulse, .clear-title, .clear-character,
-  .star-burst, .confetti-piece, .splash-fox, .splash-title, .emoji-item.bounce,
-  .gear-ring-fill {
+  .answer-btn.correct,
+  .answer-btn.wrong,
+  .answer-btn.hint-pulse,
+  .emoji-item.bounce {
     animation: none !important;
     transition: none !important;
   }
@@ -734,6 +289,11 @@ body {
   </div>
 </div>
 
+<script src="../../shared/audio-engine.js?v=1"></script>
+<script src="../../shared/audio-player.js?v=1"></script>
+<script src="../../shared/speech.js?v=1"></script>
+<script src="../../shared/game-state.js?v=1"></script>
+<script src="../../shared/ui-common.js?v=1"></script>
 <script>
 'use strict';
 
@@ -743,273 +303,96 @@ const EMOJI_POOLS = {
   animals:  ['🐶','🐱','🐰','🐼','🐸','🐥','🐟','🦋'],
   vehicles: ['🚗','🚌','🚒','🚑','🚀','⛵','🚲','🚁'],
 };
-const EMOJI_CATEGORIES = Object.keys(EMOJI_POOLS);
-const COUNT_WORDS = ['いち','に','さん','し','ご','ろく','しち','はち','きゅう','じゅう'];
+const EMOJI_CATEGORIES  = Object.keys(EMOJI_POOLS);
+const COUNT_WORDS       = ['いち','に','さん','し','ご','ろく','しち','はち','きゅう','じゅう'];
 const QUESTIONS_PER_SET = 10;
-const HINT_THRESHOLD = 3;
-const NEXT_DELAY = 2000;
-const STORAGE_KEY = 'counting-game-v1';
-const ANSWER_COLORS = ['#FF6B6B','#48DBFB','#1DD1A1'];
+const HINT_THRESHOLD    = 3;
+const NEXT_DELAY        = 2000;
+const STORAGE_KEY       = 'counting-game-v1';
+const ANSWER_COLORS     = ['#FF6B6B','#48DBFB','#1DD1A1'];
 
-// ===== AUDIO ENGINE =====
-const AudioEngine = (() => {
-  let ctx = null;
-  let masterGain = null;
-  let enabled = true;
+const PRELOAD_FILES = ['question.wav','praise_1.wav','praise_2.wav','praise_3.wav','hint.wav','clear.wav'];
 
-  function getCtx() {
+// ===== GAME-SPECIFIC EXTENSIONS =====
+// playPop: 絵文字タップ時の効果音 (shared AudioEngine に追加)
+// 専用の AudioContext を遅延初期化して再利用する
+AudioEngine.playPop = (() => {
+  let ctx = null, gain = null;
+  return function() {
+    if (!AudioEngine.isEnabled()) return;
     if (!ctx) {
       try {
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-        masterGain = ctx.createGain();
-        masterGain.gain.value = 0.5;
-        masterGain.connect(ctx.destination);
-      } catch (e) { return null; }
+        ctx  = new (window.AudioContext || window.webkitAudioContext)();
+        gain = ctx.createGain();
+        gain.gain.value = 0.5;
+        gain.connect(ctx.destination);
+      } catch (e) { return; }
     }
-    return ctx;
-  }
-
-  function resume() {
-    const c = getCtx();
-    if (c && c.state === 'suspended') c.resume().catch(() => {});
-  }
-
-  function setEnabled(val) {
-    enabled = val;
-    if (masterGain) masterGain.gain.value = val ? 0.5 : 0;
-  }
-
-  function isEnabled() { return enabled; }
-
-  function playTone(freq, type, startTime, duration, gainVal = 0.6) {
-    const c = getCtx();
-    if (!c || !enabled) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     try {
-      const osc = c.createOscillator();
-      const g = c.createGain();
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
       osc.connect(g);
-      g.connect(masterGain);
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, startTime);
-      g.gain.setValueAtTime(gainVal, startTime);
-      g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-      osc.start(startTime);
-      osc.stop(startTime + duration);
+      g.connect(gain);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(900, ctx.currentTime);
+      g.gain.setValueAtTime(0.15, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.07);
     } catch (e) {}
-  }
-
-  function playCorrect() {
-    const c = getCtx();
-    if (!c || !enabled) return;
-    const now = c.currentTime;
-    playTone(659.25, 'sine', now, 0.25, 0.7);
-    playTone(1046.5, 'sine', now + 0.18, 0.35, 0.7);
-  }
-
-  function playWrong() {
-    const c = getCtx();
-    if (!c || !enabled) return;
-    const now = c.currentTime;
-    playTone(220, 'sine', now, 0.3, 0.35);
-  }
-
-  function playClear() {
-    const c = getCtx();
-    if (!c || !enabled) return;
-    const now = c.currentTime;
-    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) =>
-      playTone(f, 'sine', now + i * 0.12, 0.3, 0.6)
-    );
-  }
-
-  function playClick() {
-    const c = getCtx();
-    if (!c || !enabled) return;
-    const now = c.currentTime;
-    playTone(880, 'sine', now, 0.06, 0.2);
-  }
-
-  function playPop() {
-    const c = getCtx();
-    if (!c || !enabled) return;
-    const now = c.currentTime;
-    playTone(900, 'sine', now, 0.07, 0.15);
-  }
-
-  return { resume, setEnabled, isEnabled, playCorrect, playWrong, playClear, playClick, playPop };
+  };
 })();
 
-// ===== AUDIO PLAYER (VOICEVOX file-based) =====
-const AudioPlayer = (() => {
-  const SILENT = 'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQIAAAAAAA==';
-  const pool = new Map();
-  const countPool = new Map(); // dedicated channel for count_N.wav
+// countPool: count_1.wav〜count_10.wav 専用チャンネル
+const countPool = new Map();
+for (let i = 1; i <= 10; i++) {
+  const a = new Audio();
+  a.preload = 'auto';
+  a.src = `audio/count_${i}.wav`;
+  countPool.set(i, a);
+}
 
-  function preload() {
-    const voiceFiles = ['question.wav','praise_1.wav','praise_2.wav','praise_3.wav','hint.wav','clear.wav'];
-    voiceFiles.forEach(file => {
-      if (pool.has(file)) return;
-      const a = new Audio();
-      a.preload = 'auto';
-      a.src = `audio/${file}`;
-      pool.set(file, a);
-    });
-    for (let i = 1; i <= 10; i++) {
-      if (countPool.has(i)) continue;
-      const a = new Audio();
-      a.preload = 'auto';
-      a.src = `audio/count_${i}.wav`;
-      countPool.set(i, a);
-    }
-  }
+// AudioPlayer.unlock を拡張して countPool も解除する
+const _origUnlock = AudioPlayer.unlock.bind(AudioPlayer);
+AudioPlayer.unlock = function() {
+  _origUnlock();
+  countPool.forEach(a => { if (a.readyState === 0) a.load(); });
+};
 
-  function unlock() {
-    const u = new Audio(SILENT);
-    u.play().catch(() => {});
-    pool.forEach(a => { if (a.readyState === 0) a.load(); });
-    countPool.forEach(a => { if (a.readyState === 0) a.load(); });
-  }
+// AudioPlayer.playCount: countPool 経由で再生
+AudioPlayer.playCount = function(n, fallback) {
+  countPool.forEach(a => { if (!a.paused) { a.pause(); a.currentTime = 0; } });
+  const a = countPool.get(n);
+  if (!a) { fallback && fallback(); return; }
+  a.currentTime = 0;
+  const p = a.play();
+  if (p) p.catch(err => {
+    if (err && err.name === 'AbortError') return;
+    fallback && fallback();
+  });
+};
 
-  function play(file, fallback) {
-    try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e) {}
-    const a = pool.get(file);
-    if (!a) {
-      console.warn(`AudioPlayer: ${file} not in pool`);
-      fallback && fallback();
-      return;
-    }
-    pool.forEach((el, f) => { if (f !== file && !el.paused) { el.pause(); el.currentTime = 0; } });
-    a.currentTime = 0;
-    const p = a.play();
-    if (p) p.catch(err => {
-      if (err && err.name === 'AbortError') return;
-      console.warn(`AudioPlayer: ${file} failed (${err.name})`);
-      fallback && fallback();
-    });
-  }
-
-  function playCount(n, fallback) {
-    countPool.forEach(a => { if (!a.paused) { a.pause(); a.currentTime = 0; } });
-    const a = countPool.get(n);
-    if (!a) { fallback && fallback(); return; }
-    a.currentTime = 0;
-    const p = a.play();
-    if (p) p.catch(err => {
-      if (err && err.name === 'AbortError') return;
-      fallback && fallback();
-    });
-  }
-
-  return { preload, unlock, play, playCount };
-})();
-
-// ===== SPEECH =====
-const Speech = (() => {
-  const supported = 'speechSynthesis' in window;
-  let selectedVoice = null;
-
-  function selectVoice() {
-    if (!supported) return;
-    try {
-      const voices = speechSynthesis.getVoices();
-      const ja = voices.filter(v => v.lang && v.lang.startsWith('ja'));
-      if (!ja.length) return;
-      selectedVoice =
-        ja.find(v => /Nanami|Natural/i.test(v.name)) ||
-        ja.find(v => v.name.includes('Google 日本語')) ||
-        ja.find(v => v.name.includes('Kyoko')) ||
-        ja[0];
-    } catch (e) {}
-  }
-
-  function init() {
-    if (!supported) return;
-    try {
-      speechSynthesis.addEventListener('voiceschanged', selectVoice);
-      selectVoice();
-      const u = new SpeechSynthesisUtterance('');
-      u.lang = 'ja-JP';
-      u.volume = 0;
-      speechSynthesis.speak(u);
-    } catch (e) {}
-  }
-
-  function _tts(text) {
-    if (!supported) return;
+// Speech.speakCount: カウント数を読み上げ (shared Speech に追加)
+Speech.speakCount = function(n) {
+  if (!AudioEngine.isEnabled()) return;
+  AudioPlayer.playCount(n, () => {
+    if (!('speechSynthesis' in window)) return;
     try {
       speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
+      const u = new SpeechSynthesisUtterance(COUNT_WORDS[n - 1]);
       u.lang = 'ja-JP';
-      u.rate = 1.0;
-      u.pitch = 1.1;
-      if (selectedVoice) u.voice = selectedVoice;
       speechSynthesis.speak(u);
     } catch (e) {}
-  }
-
-  function speak(text, file) {
-    if (!AudioEngine.isEnabled()) return;
-    if (file) {
-      AudioPlayer.play(file, () => _tts(text));
-      return;
-    }
-    _tts(text);
-  }
-
-  function speakCount(n) {
-    if (!AudioEngine.isEnabled()) return;
-    AudioPlayer.playCount(n, () => _tts(COUNT_WORDS[n - 1]));
-  }
-
-  function cancel() {
-    if (!supported) return;
-    try { speechSynthesis.cancel(); } catch (e) {}
-  }
-
-  return { init, speak, speakCount, cancel };
-})();
+  });
+};
 
 // ===== GAME STATE =====
-const GameState = (() => {
-  function defaults() {
-    const numberStats = {};
-    for (let i = 1; i <= 10; i++) numberStats[i] = { asked: 0, correct: 0 };
-    return { totalCorrect: 0, setClearCount: 0, numberStats };
-  }
-
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        const d = defaults();
-        return {
-          totalCorrect: data.totalCorrect || 0,
-          setClearCount: data.setClearCount || 0,
-          numberStats: data.numberStats || d.numberStats,
-        };
-      }
-    } catch (e) {}
-    return defaults();
-  }
-
-  function save(state) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        totalCorrect: state.totalCorrect,
-        setClearCount: state.setClearCount,
-        numberStats: state.numberStats,
-      }));
-    } catch (e) {}
-  }
-
-  function reset() {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-    return defaults();
-  }
-
-  return { load, save, reset };
-})();
+const GameState = createGameState(STORAGE_KEY, () => {
+  const numberStats = {};
+  for (let i = 1; i <= 10; i++) numberStats[i] = { asked: 0, correct: 0 };
+  return { totalCorrect: 0, setClearCount: 0, numberStats };
+});
 
 // ===== QUESTION GENERATOR =====
 const QuestionGenerator = (() => {
@@ -1024,46 +407,37 @@ const QuestionGenerator = (() => {
 
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-  // Build a balanced category sequence for 10 questions
   function makeCategorySeq() {
     const seq = [];
     EMOJI_CATEGORIES.forEach((cat, i) => {
-      const n = i === 0 ? 4 : 3; // fruits×4, animals×3, vehicles×3
+      const n = i === 0 ? 4 : 3;
       for (let j = 0; j < n; j++) seq.push(cat);
     });
     return shuffle(seq);
   }
 
   function makeChoices(n) {
-    // Collect candidates ±1 then ±2 then ±3, keeping 1-10 range
     const candidates = [];
     for (let d = 1; d <= 3 && candidates.length < 4; d++) {
       if (n - d >= 1) candidates.push(n - d);
       if (n + d <= 10) candidates.push(n + d);
     }
-    // Take closest 2 wrong answers
-    const wrong = candidates.slice(0, 2);
-    return shuffle([n, ...wrong]);
+    return shuffle([n, ...candidates.slice(0, 2)]);
   }
 
-  // Place N emoji without overlap using grid + jitter
   function computePositions(count, fieldW, fieldH) {
-    const ITEM_HALF = 44; // half of 88px tap area
+    const ITEM_HALF = 44;
     const cols = Math.max(2, Math.min(5, Math.ceil(Math.sqrt(count * fieldW / Math.max(fieldH, 1)))));
     const rows = Math.ceil(count / cols);
-
     const cellW = fieldW / cols;
     const cellH = fieldH / rows;
-
     const cells = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) cells.push({ c, r });
     }
     const chosen = shuffle(cells).slice(0, count);
-
     const jx = Math.max(0, (cellW / 2 - ITEM_HALF) * 0.7);
     const jy = Math.max(0, (cellH / 2 - ITEM_HALF) * 0.7);
-
     return chosen.map(({ c, r }) => {
       const cx = (c + 0.5) * cellW;
       const cy = (r + 0.5) * cellH;
@@ -1074,428 +448,224 @@ const QuestionGenerator = (() => {
   }
 
   function generate(questionIndex, prevN, categorySeq) {
-    // Pick N 1-10, avoid repeating prevN
-    let n;
-    let tries = 0;
+    let n, tries = 0;
     do {
       n = Math.floor(Math.random() * 10) + 1;
       tries++;
     } while (n === prevN && tries < 20);
-
     const category = categorySeq[questionIndex % categorySeq.length];
-    const emoji = pick(EMOJI_POOLS[category]);
-    const choices = makeChoices(n);
-
+    const emoji    = pick(EMOJI_POOLS[category]);
+    const choices  = makeChoices(n);
     return { n, emoji, choices };
   }
 
   return { makeCategorySeq, generate, computePositions };
 })();
 
-// ===== UI =====
-const UI = (() => {
-  let state = null;
-  let session = {};
+// ===== GAME LOGIC =====
+let state   = null;
+let session = {};
 
-  const screens = {
-    splash: document.getElementById('screen-splash'),
-    start:  document.getElementById('screen-start'),
-    game:   document.getElementById('screen-game'),
-    clear:  document.getElementById('screen-clear'),
+function startGame() {
+  session = {
+    questionIndex: 0,
+    wrongCount:    0,
+    prevN:         null,
+    locked:        false,
+    n:             null,
+    tapCount:      0,
+    hintShown:     false,
+    categorySeq:   QuestionGenerator.makeCategorySeq(),
   };
+  UICommon.showScreen('game');
+  nextQuestion();
+}
 
-  function showScreen(name) {
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[name].classList.add('active');
+function nextQuestion() {
+  session.locked     = false;
+  session.wrongCount = 0;
+  session.tapCount   = 0;
+  session.hintShown  = false;
+
+  const { n, emoji, choices } = QuestionGenerator.generate(
+    session.questionIndex, session.prevN, session.categorySeq
+  );
+  session.n    = n;
+  session.prevN = n;
+
+  state.numberStats[n].asked++;
+  GameState.save(state);
+
+  UICommon.renderProgress(session.questionIndex, QUESTIONS_PER_SET);
+  renderAnswerButtons(choices);
+
+  requestAnimationFrame(() => { renderEmojiField(n, emoji); });
+
+  Speech.speak('ぜんぶで いくつかな', 'question.wav');
+}
+
+function emojiSize(n) {
+  if (n <= 3) return '60px';
+  if (n <= 6) return '50px';
+  return '40px';
+}
+
+function renderEmojiField(n, emoji) {
+  const field = document.getElementById('emoji-field');
+  field.innerHTML = '';
+  const { width: W, height: H } = field.getBoundingClientRect();
+  if (W === 0 || H === 0) { setTimeout(() => renderEmojiField(n, emoji), 50); return; }
+  const positions = QuestionGenerator.computePositions(n, W, H);
+  const fsize     = emojiSize(n);
+
+  positions.forEach((pos, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-item';
+    btn.style.left = pos.x + 'px';
+    btn.style.top  = pos.y + 'px';
+    btn.style.fontSize = fsize;
+    btn.setAttribute('aria-label', emoji);
+    btn.dataset.index = i;
+
+    const span = document.createElement('span');
+    span.textContent = emoji;
+    btn.appendChild(span);
+
+    btn.addEventListener('click', () => onEmojiTap(btn));
+    field.appendChild(btn);
+  });
+}
+
+function onEmojiTap(btn) {
+  if (session.locked) return;
+  if (btn.classList.contains('tapped')) return;
+  session.tapCount++;
+  const tapNum = session.tapCount;
+  btn.classList.add('tapped');
+
+  const badge = document.createElement('span');
+  badge.className = 'count-badge';
+  badge.textContent = tapNum;
+  btn.appendChild(badge);
+
+  btn.classList.add('bounce');
+  setTimeout(() => btn.classList.remove('bounce'), 450);
+
+  AudioEngine.playPop();
+  Speech.speakCount(tapNum);
+}
+
+function renderAnswerButtons(choices) {
+  const row = document.getElementById('answer-row');
+  row.innerHTML = '';
+  choices.forEach((num, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = num;
+    btn.style.borderColor = ANSWER_COLORS[i % ANSWER_COLORS.length];
+    btn.dataset.num = num;
+    btn.addEventListener('click', () => onAnswerTap(btn, num));
+    row.appendChild(btn);
+  });
+}
+
+function onAnswerTap(btn, num) {
+  if (session.locked) return;
+  if (num === session.n) onCorrect(btn, num);
+  else                   onWrong(btn);
+}
+
+function onCorrect(btn, num) {
+  session.locked = true;
+  document.getElementById('answer-row').querySelectorAll('.answer-btn')
+    .forEach(b => b.classList.add('disabled'));
+  btn.classList.add('correct');
+
+  AudioEngine.playCorrect();
+  UICommon.spawnStars(btn);
+  UICommon.jumpCharacter();
+
+  if (session.wrongCount === 0) {
+    state.numberStats[num].correct++;
   }
+  state.totalCorrect++;
+  GameState.save(state);
 
-  function renderProgress(current, total) {
-    document.getElementById('progress-label').textContent = `${current} / ${total}`;
-    const dots = document.getElementById('progress-dots');
-    dots.innerHTML = '';
-    for (let i = 0; i < total; i++) {
-      const d = document.createElement('div');
-      d.className = 'progress-dot' + (i < current ? ' filled' : '');
-      dots.appendChild(d);
-    }
-  }
+  const praiseIdx = Math.floor(Math.random() * 3) + 1;
+  const praises   = ['できたね！', 'すごい！', 'やったね！'];
+  Speech.speak(praises[praiseIdx - 1], `praise_${praiseIdx}.wav`);
 
-  // ---- GAME ----
-  function startGame() {
-    session = {
-      questionIndex: 0,
-      wrongCount: 0,
-      prevN: null,
-      locked: false,
-      n: null,
-      tapCount: 0,
-      hintShown: false,
-      categorySeq: QuestionGenerator.makeCategorySeq(),
-    };
-    showScreen('game');
-    nextQuestion();
-  }
+  session.questionIndex++;
+  UICommon.renderProgress(session.questionIndex, QUESTIONS_PER_SET);
 
-  function nextQuestion() {
-    session.locked = false;
-    session.wrongCount = 0;
-    session.tapCount = 0;
-    session.hintShown = false;
-
-    const { n, emoji, choices } = QuestionGenerator.generate(
-      session.questionIndex,
-      session.prevN,
-      session.categorySeq
-    );
-    session.n = n;
-    session.prevN = n;
-
-    // Track asked count for this number
-    state.numberStats[n].asked++;
+  if (session.questionIndex >= QUESTIONS_PER_SET) {
+    state.setClearCount++;
     GameState.save(state);
-
-    renderProgress(session.questionIndex, QUESTIONS_PER_SET);
-    renderAnswerButtons(choices);
-
-    requestAnimationFrame(() => {
-      renderEmojiField(n, emoji);
-    });
-
-    Speech.speak('ぜんぶで いくつかな', 'question.wav');
+    setTimeout(showClear, NEXT_DELAY);
+  } else {
+    setTimeout(nextQuestion, NEXT_DELAY);
   }
+}
 
-  function emojiSize(n) {
-    if (n <= 3) return '60px';
-    if (n <= 6) return '50px';
-    return '40px';
+function onWrong(btn) {
+  btn.classList.add('wrong');
+  AudioEngine.playWrong();
+  setTimeout(() => btn.classList.remove('wrong'), 450);
+  session.wrongCount++;
+  if (session.wrongCount >= HINT_THRESHOLD && !session.hintShown) showHint();
+}
+
+function showHint() {
+  session.hintShown = true;
+  document.getElementById('answer-row').querySelectorAll('.answer-btn').forEach(b => {
+    if (parseInt(b.dataset.num) === session.n) b.classList.add('hint-pulse');
+  });
+  Speech.speak('もういちど かぞえてみよう', 'hint.wav');
+}
+
+function showClear() {
+  AudioEngine.playClear();
+  Speech.speak('ぜんぶ できたね！', 'clear.wav');
+  UICommon.spawnConfetti();
+  document.getElementById('clear-subtitle').textContent = '10もん ぜんぶ できたね！';
+  UICommon.showScreen('clear');
+}
+
+function renderParentStats() {
+  const el = document.getElementById('parent-stats');
+  if (!el) return;
+  const totalAsked = Object.values(state.numberStats).reduce((s, v) => s + v.asked, 0);
+  const totalFirst = Object.values(state.numberStats).reduce((s, v) => s + v.correct, 0);
+  const accuracy   = totalAsked > 0 ? Math.round(totalFirst / totalAsked * 100) : 0;
+
+  let html = `
+    <div class="stat-row"><span>せいかい（のべ）</span><strong>${state.totalCorrect}もん</strong></div>
+    <div class="stat-row"><span>クリア</span><strong>${state.setClearCount}かい</strong></div>
+    <div class="stat-row"><span>1かいめせいかいりつ</span><strong>${accuracy}%</strong></div>
+    <div class="num-stats-label">かずべつ せいかいりつ（1かいめ）</div>
+    <div class="number-stats-grid">`;
+  for (let n = 1; n <= 10; n++) {
+    const ns  = state.numberStats[n];
+    const pct = ns.asked > 0 ? Math.round(ns.correct / ns.asked * 100) + '%' : '-';
+    html += `<div class="num-stat-cell">
+      <span class="num-label">${n}</span>
+      <span class="num-pct">${pct}</span>
+    </div>`;
   }
+  html += '</div>';
+  el.innerHTML = html;
+}
 
-  function renderEmojiField(n, emoji) {
-    const field = document.getElementById('emoji-field');
-    field.innerHTML = '';
-    const { width: W, height: H } = field.getBoundingClientRect();
-    if (W === 0 || H === 0) {
-      setTimeout(() => renderEmojiField(n, emoji), 50);
-      return;
-    }
-    const positions = QuestionGenerator.computePositions(n, W, H);
-    const fsize = emojiSize(n);
-
-    positions.forEach((pos, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'emoji-item';
-      btn.style.left = pos.x + 'px';
-      btn.style.top  = pos.y + 'px';
-      btn.style.fontSize = fsize;
-      btn.setAttribute('aria-label', emoji);
-      btn.dataset.index = i;
-
-      const span = document.createElement('span');
-      span.textContent = emoji;
-      btn.appendChild(span);
-
-      btn.addEventListener('click', () => onEmojiTap(btn));
-      field.appendChild(btn);
-    });
-  }
-
-  function onEmojiTap(btn) {
-    if (session.locked) return;
-    if (btn.classList.contains('tapped')) return;
-
-    session.tapCount++;
-    const tapNum = session.tapCount;
-
-    btn.classList.add('tapped');
-
-    const badge = document.createElement('span');
-    badge.className = 'count-badge';
-    badge.textContent = tapNum;
-    btn.appendChild(badge);
-
-    btn.classList.add('bounce');
-    setTimeout(() => btn.classList.remove('bounce'), 450);
-
-    AudioEngine.playPop();
-    Speech.speakCount(tapNum);
-  }
-
-  function renderAnswerButtons(choices) {
-    const row = document.getElementById('answer-row');
-    row.innerHTML = '';
-    choices.forEach((num, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'answer-btn';
-      btn.textContent = num;
-      btn.style.borderColor = ANSWER_COLORS[i % ANSWER_COLORS.length];
-      btn.dataset.num = num;
-      btn.addEventListener('click', () => onAnswerTap(btn, num));
-      row.appendChild(btn);
-    });
-  }
-
-  function onAnswerTap(btn, num) {
-    if (session.locked) return;
-    if (num === session.n) onCorrect(btn, num);
-    else onWrong(btn);
-  }
-
-  function onCorrect(btn, num) {
-    session.locked = true;
-    disableAllAnswers();
-    btn.classList.add('correct');
-    AudioEngine.playCorrect();
-    spawnStars(btn);
-    jumpCharacter();
-
-    // First-attempt correct tracking
-    if (session.wrongCount === 0) {
-      state.numberStats[num].correct++;
-    }
-    state.totalCorrect++;
-    GameState.save(state);
-
-    const praises = ['できたね！', 'すごい！', 'やったね！'];
-    const praiseIdx = Math.floor(Math.random() * 3) + 1;
-    Speech.speak(praises[praiseIdx - 1], `praise_${praiseIdx}.wav`);
-
-    session.questionIndex++;
-    renderProgress(session.questionIndex, QUESTIONS_PER_SET);
-
-    if (session.questionIndex >= QUESTIONS_PER_SET) {
-      state.setClearCount++;
-      GameState.save(state);
-      setTimeout(showClear, NEXT_DELAY);
-    } else {
-      setTimeout(nextQuestion, NEXT_DELAY);
-    }
-  }
-
-  function onWrong(btn) {
-    btn.classList.add('wrong');
-    AudioEngine.playWrong();
-    setTimeout(() => btn.classList.remove('wrong'), 450);
-    session.wrongCount++;
-    if (session.wrongCount >= HINT_THRESHOLD && !session.hintShown) showHint();
-  }
-
-  function showHint() {
-    session.hintShown = true;
-    document.getElementById('answer-row').querySelectorAll('.answer-btn').forEach(b => {
-      if (parseInt(b.dataset.num) === session.n) b.classList.add('hint-pulse');
-    });
-    Speech.speak('もういちど かぞえてみよう', 'hint.wav');
-  }
-
-  function disableAllAnswers() {
-    document.getElementById('answer-row').querySelectorAll('.answer-btn')
-      .forEach(b => b.classList.add('disabled'));
-  }
-
-  function jumpCharacter() {
-    const c = document.getElementById('char-game');
-    c.classList.remove('jump');
-    void c.offsetWidth;
-    c.classList.add('jump');
-    setTimeout(() => c.classList.remove('jump'), 600);
-  }
-
-  function spawnStars(el) {
-    const rect = el.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const stars = ['⭐','✨','🌟'];
-    for (let i = 0; i < 5; i++) {
-      const star = document.createElement('div');
-      star.className = 'star-burst';
-      star.textContent = stars[i % stars.length];
-      const angle = (i / 5) * Math.PI * 2;
-      const dist = 60 + Math.random() * 50;
-      star.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
-      star.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
-      star.style.left = cx + 'px';
-      star.style.top  = cy + 'px';
-      document.body.appendChild(star);
-      setTimeout(() => star.remove(), 850);
-    }
-  }
-
-  // ---- CLEAR ----
-  function showClear() {
-    AudioEngine.playClear();
-    Speech.speak('ぜんぶ できたね！', 'clear.wav');
-    spawnConfetti();
-    document.getElementById('clear-subtitle').textContent = '10もん ぜんぶ できたね！';
-    showScreen('clear');
-  }
-
-  function spawnConfetti() {
-    const container = document.getElementById('confetti-container');
-    container.innerHTML = '';
-    const colors = ['#FF6B6B','#FECA57','#48DBFB','#FF9FF3','#54A0FF','#1DD1A1','#FF9F43'];
-    for (let i = 0; i < 60; i++) {
-      const piece = document.createElement('div');
-      piece.className = 'confetti-piece';
-      piece.style.left = Math.random() * 100 + 'vw';
-      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-      piece.style.width  = (8 + Math.random() * 8) + 'px';
-      piece.style.height = (8 + Math.random() * 8) + 'px';
-      piece.style.animationDuration = (2 + Math.random() * 2) + 's';
-      piece.style.animationDelay    = (Math.random() * 1) + 's';
-      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-      container.appendChild(piece);
-    }
-    setTimeout(() => { container.innerHTML = ''; }, 4500);
-  }
-
-  // ---- PARENT MENU ----
-  function openParentMenu() {
-    renderParentStats();
-    updateVolumeUI();
-    document.getElementById('modal-parent').classList.add('active');
-  }
-
-  function renderParentStats() {
-    const el = document.getElementById('parent-stats');
-    if (!el) return;
-
-    const totalAsked = Object.values(state.numberStats).reduce((s, v) => s + v.asked, 0);
-    const totalFirst = Object.values(state.numberStats).reduce((s, v) => s + v.correct, 0);
-    const accuracy = totalAsked > 0 ? Math.round(totalFirst / totalAsked * 100) : 0;
-
-    let html = `
-      <div class="stat-row"><span>せいかい（のべ）</span><strong>${state.totalCorrect}もん</strong></div>
-      <div class="stat-row"><span>クリア</span><strong>${state.setClearCount}かい</strong></div>
-      <div class="stat-row"><span>1かいめせいかいりつ</span><strong>${accuracy}%</strong></div>
-      <div class="num-stats-label">かずべつ せいかいりつ（1かいめ）</div>
-      <div class="number-stats-grid">`;
-    for (let n = 1; n <= 10; n++) {
-      const ns = state.numberStats[n];
-      const pct = ns.asked > 0 ? Math.round(ns.correct / ns.asked * 100) + '%' : '-';
-      html += `<div class="num-stat-cell">
-        <span class="num-label">${n}</span>
-        <span class="num-pct">${pct}</span>
-      </div>`;
-    }
-    html += '</div>';
-    el.innerHTML = html;
-  }
-
-  function updateVolumeUI() {
-    const on = AudioEngine.isEnabled();
-    document.getElementById('toggle-volume').classList.toggle('on', on);
-    document.getElementById('volume-label').textContent = on ? 'オン' : 'オフ';
-  }
-
-  // ---- INIT ----
-  function init() {
-    state = GameState.load();
-
-    document.getElementById('btn-start').addEventListener('click', () => {
-      AudioEngine.resume();
-      AudioPlayer.unlock();
-      Speech.init();
-      AudioEngine.playClick();
-      startGame();
-    });
-
-    document.getElementById('btn-home-game').addEventListener('click', () => {
-      AudioEngine.playClick();
-      Speech.cancel();
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: 'go-home' }, '*');
-      } else {
-        showScreen('start');
-      }
-    });
-
-    document.getElementById('btn-speak').addEventListener('click', () => {
-      AudioEngine.playClick();
-      Speech.speak('ぜんぶで いくつかな', 'question.wav');
-    });
-
-    document.getElementById('btn-next').addEventListener('click', () => {
-      AudioEngine.playClick();
-      startGame();
-    });
-
-    document.getElementById('btn-quit').addEventListener('click', () => {
-      AudioEngine.playClick();
-      Speech.cancel();
-      showScreen('start');
-    });
-
-    // Gear - 3 second long press
-    let gearTimer = null;
-    const gearBtn = document.getElementById('btn-gear');
-    function startGearHold(e) {
-      gearBtn.setPointerCapture(e.pointerId);
-      gearBtn.classList.add('holding');
-      gearTimer = setTimeout(() => {
-        gearBtn.classList.remove('holding');
-        openParentMenu();
-      }, 3000);
-    }
-    function cancelGearHold() {
-      if (gearTimer) { clearTimeout(gearTimer); gearTimer = null; }
-      gearBtn.classList.remove('holding');
-    }
-    gearBtn.addEventListener('pointerdown', startGearHold);
-    gearBtn.addEventListener('pointerup', cancelGearHold);
-    gearBtn.addEventListener('pointercancel', cancelGearHold);
-    gearBtn.addEventListener('pointerleave', cancelGearHold);
-    gearBtn.addEventListener('contextmenu', e => e.preventDefault());
-
-    document.getElementById('btn-parent-close').addEventListener('click', () => {
-      document.getElementById('modal-parent').classList.remove('active');
-    });
-
-    document.getElementById('toggle-volume').addEventListener('click', () => {
-      const newVal = !AudioEngine.isEnabled();
-      AudioEngine.setEnabled(newVal);
-      if (newVal) AudioEngine.resume();
-      updateVolumeUI();
-    });
-
-    document.getElementById('btn-reset-confirm').addEventListener('click', () => {
-      document.getElementById('modal-parent').classList.remove('active');
-      document.getElementById('modal-reset').classList.add('active');
-    });
-
-    document.getElementById('btn-reset-do').addEventListener('click', () => {
-      state = GameState.reset();
-      document.getElementById('modal-reset').classList.remove('active');
-      Speech.cancel();
-      showScreen('start');
-    });
-
-    document.getElementById('btn-reset-cancel').addEventListener('click', () => {
-      document.getElementById('modal-reset').classList.remove('active');
-      document.getElementById('modal-parent').classList.add('active');
-    });
-
-    // Splash → start
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      showScreen('start');
-    } else {
-      let splashDone = false;
-      function endSplash() {
-        if (splashDone) return;
-        splashDone = true;
-        screens.splash.removeEventListener('pointerdown', endSplash);
-        showScreen('start');
-      }
-      screens.splash.addEventListener('pointerdown', endSplash);
-      setTimeout(endSplash, 1500);
-    }
-  }
-
-  return { init };
-})();
-
-// Boot
-UI.init();
-AudioPlayer.preload();
+// ===== BOOT =====
+state = GameState.load();
+AudioPlayer.preload(PRELOAD_FILES);
+UICommon.init({
+  onStart:     () => { startGame(); },
+  onSpeakGame: () => { Speech.speak('ぜんぶで いくつかな', 'question.wav'); },
+  onNextClear: () => { startGame(); },
+  onReset:     () => { state = GameState.reset(); },
+  renderStats: () => { renderParentStats(); },
+});
 </script>
 </body>
 </html>
