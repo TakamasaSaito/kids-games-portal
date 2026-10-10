@@ -21,7 +21,7 @@
     "subtitle": "どっちがおおきいかな？",
     "emoji": "🦊",
     "path": "games/compare-game/",
-    "status": "coming-soon"
+    "status": "live"
   },
   {
     "id": "shiritori",
@@ -43,7 +43,7 @@
     "id": "meiro",
     "title": "めいろ",
     "subtitle": "ゴールまでいこう！",
-    "emoji": "🗺",
+    "emoji": "🌀",
     "path": null,
     "status": "coming-soon"
   },

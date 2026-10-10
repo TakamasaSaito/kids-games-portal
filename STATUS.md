@@ -3,7 +3,7 @@
 ## 進捗
 
 - [x] **ステップ1**: ポータル + games.json + ドキュメント作成、GitHub Pages 公開準備
-- [ ] **ステップ2**: compare-game を games/ に統合
+- [x] **ステップ2**: compare-game を games/ に統合
   - `audio/count_1.wav`〜`count_10.wav`（10ファイル）はコピーしない（未使用確認済み）
   - 統合後 games.json の status を `"live"` に変更
 - [ ] **ステップ3**: counting-game・hiragana-hunt を games/ に統合
@@ -23,5 +23,4 @@
 
 ## 次の一手
 
-ステップ2: compare-game を `games/compare-game/` にコピー（count_*.wav 除去済み）し、
-games.json の status を `"live"` に変更する。
+ステップ3: counting-game・hiragana-hunt を `games/` に統合し、games.json の status を `"live"` に変更する。
