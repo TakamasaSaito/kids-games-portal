@@ -18,7 +18,7 @@
   - [x] **5-1**: compare-game を shared/ に移行（試験台）
   - [x] **5-2**: counting-game を shared/ に移行
   - [x] **5-3**: hiragana-hunt を shared/ に移行
-  - [ ] **5-4**: games/_template/ 作成
+  - [x] **5-4**: games/_template/ 作成
 
 ## 近日公開（予定）
 

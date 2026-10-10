@@ -30,9 +30,11 @@ README.md
 
 ## ゲーム追加手順
 
-1. `games/<new-id>/` フォルダを作り `index.html` を配置
-2. `games.json` にエントリを追加（`status: "coming-soon"` から始めてよい）
-3. 動作確認後 `status` を `"live"` に変更してコミット
+1. `games/_template/` を `games/<new-id>/` にコピーする
+2. `index.html` の `TODO:` をすべて埋め、ダミーボタンと `DUMMY_` ブロックを削除する
+3. `games.json` にエントリを追加（`status: "coming-soon"` から始めてよい）
+4. スタート → ゲーム → クリア → 🏠 が通ったら `status` を `"live"` に変更してコミット
+5. shared/ を変更した場合は全ゲームの `?v=N` を同じ番号にインクリメントする（下記ルール参照）
 
 ## games.json のスキーマ
 
