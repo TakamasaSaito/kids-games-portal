@@ -24,6 +24,7 @@
   padding-top: max(60px, calc(env(safe-area-inset-top) + 56px));
   padding-bottom: max(16px, env(safe-area-inset-bottom));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .screen-title {
@@ -72,14 +73,14 @@
 }
 .category-btn:active { transform: scale(0.96); }
 
-.difficulty-row {
+.age-row {
   display: flex;
   gap: 10px;
   width: 100%;
   max-width: 400px;
 }
 
-.diff-btn {
+.age-btn {
   flex: 1;
   touch-action: manipulation;
   padding: 0.65em 0.4em;
@@ -94,12 +95,12 @@
   transition: background 0.12s, border-color 0.12s, color 0.12s;
   line-height: 1.3;
 }
-.diff-btn.selected {
+.age-btn.selected {
   background: rgba(255,255,255,0.9);
   color: var(--text-dark);
   border-color: var(--white);
 }
-.diff-btn:active { transform: scale(0.96); }
+.age-btn:active { transform: scale(0.96); }
 
 /* ===== GAME SCREEN ===== */
 #screen-game {
@@ -316,10 +317,11 @@
   <div class="category-grid" id="category-grid">
     <!-- JS で生成 -->
   </div>
-  <div class="screen-title">むずかしさをえらぼう</div>
-  <div class="difficulty-row">
-    <button class="diff-btn selected" data-diff="1">やさしい</button>
-    <button class="diff-btn" data-diff="2">ちょっと<br>考える</button>
+  <div class="screen-title">ねんれいをえらぼう</div>
+  <div class="age-row">
+    <button class="age-btn" data-age="2">2さい</button>
+    <button class="age-btn selected" data-age="3">3さい</button>
+    <button class="age-btn" data-age="4">4さい</button>
   </div>
   <button class="btn-primary" id="btn-start-game" aria-label="はじめる">はじめる</button>
   <button class="btn-secondary" id="btn-back-start">もどる</button>
@@ -429,9 +431,10 @@ const GameState = createGameState(STORAGE_KEY, () => ({
 let state = null;
 
 let quizData      = null;
+let ageMap        = {};
 let loadError     = false;
 let selectedCatId = 'all';
-let selectedDiff  = 1;
+let selectedAge   = 3;
 
 // ===== ユーティリティ =====
 function buildSpeechText(q) {
@@ -448,6 +451,20 @@ function shuffle(arr) {
   return arr;
 }
 
+// ===== ジャンル絵文字 =====
+const CATEGORY_EMOJI = {
+  animals:         '🐶',
+  small_creatures: '🐛',
+  nature:          '🍂',
+  food:            '🍎',
+  daily:           '✏️',
+  home:            '🏠',
+  transport:       '🚗',
+  places:          '🏪',
+  body:            '💪',
+  play:            '🎨',
+};
+
 // ===== 選択画面の構築 =====
 function buildSelectScreen() {
   if (!quizData) return;
@@ -458,7 +475,7 @@ function buildSelectScreen() {
   const omakase = document.createElement('button');
   omakase.className = 'category-btn omakase' + (selectedCatId === 'all' ? ' selected' : '');
   omakase.dataset.catId = 'all';
-  omakase.textContent = 'おまかせ';
+  omakase.textContent = '🎲 おまかせ';
   omakase.addEventListener('click', () => selectCategory('all'));
   grid.appendChild(omakase);
 
@@ -466,13 +483,14 @@ function buildSelectScreen() {
     const btn = document.createElement('button');
     btn.className = 'category-btn' + (selectedCatId === cat.id ? ' selected' : '');
     btn.dataset.catId = cat.id;
-    btn.textContent = cat.name;
+    const emoji = CATEGORY_EMOJI[cat.id] || '';
+    btn.textContent = emoji ? emoji + ' ' + cat.label : cat.label;
     btn.addEventListener('click', () => selectCategory(cat.id));
     grid.appendChild(btn);
   });
 
-  document.querySelectorAll('.diff-btn').forEach(btn => {
-    btn.classList.toggle('selected', Number(btn.dataset.diff) === selectedDiff);
+  document.querySelectorAll('.age-btn').forEach(btn => {
+    btn.classList.toggle('selected', Number(btn.dataset.age) === selectedAge);
   });
 }
 
@@ -497,11 +515,11 @@ function getPriority(q, history) {
 // 単一ジャンル指定: ジャンル制限なし
 // 最近20問のIDを優先的に回避し、候補不足時は fallback から補充
 // 優先順: まだ出ていない → 初回不正解/スキップ → 既に正解
-function buildRound(questions, catId, diff, recentIds, history) {
+function buildRound(questions, catId, recentIds, history) {
   const pool = questions.filter(q =>
     q.enabled &&
     (catId === 'all' || q.categoryId === catId) &&
-    q.difficulty === diff
+    ageMap[q.id] === selectedAge
   );
 
   // シャッフル後に優先度順でソート（同優先度内はランダム）
@@ -564,7 +582,6 @@ function startGame() {
   currentRound = buildRound(
     quizData.questions,
     selectedCatId,
-    selectedDiff,
     state.recentIds || [],
     state.questionHistory || {}
   );
@@ -715,19 +732,20 @@ function advanceQuestion(skipped = false) {
 }
 
 // ===== JSON 読み込み =====
-fetch('data/quiz_questions_300.json')
-  .then(r => r.json())
-  .then(data => {
-    quizData = data;
-    buildSelectScreen();
-    const btn = document.getElementById('btn-start');
-    btn.disabled = false;
-    btn.textContent = 'はじめる';
-  })
-  .catch(() => {
-    loadError = true;
-    document.getElementById('load-error').hidden = false;
-  });
+Promise.all([
+  fetch('data/quiz_questions_300.json').then(r => r.json()),
+  fetch('data/monoshiri_age_map.json').then(r => r.json()),
+]).then(([quizJson, ageJson]) => {
+  quizData = quizJson;
+  ageMap   = ageJson.ageByQuestionId || {};
+  buildSelectScreen();
+  const btn = document.getElementById('btn-start');
+  btn.disabled = false;
+  btn.textContent = 'はじめる';
+}).catch(() => {
+  loadError = true;
+  document.getElementById('load-error').hidden = false;
+});
 
 // ===== BOOT =====
 state = GameState.load();
@@ -777,10 +795,10 @@ document.getElementById('btn-back-start').addEventListener('click', () => {
   UICommon.showScreen('start');
 });
 
-document.querySelectorAll('.diff-btn').forEach(btn => {
+document.querySelectorAll('.age-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    selectedDiff = Number(btn.dataset.diff);
-    document.querySelectorAll('.diff-btn').forEach(b =>
+    selectedAge = Number(btn.dataset.age);
+    document.querySelectorAll('.age-btn').forEach(b =>
       b.classList.toggle('selected', b === btn)
     );
     AudioEngine.playClick();
