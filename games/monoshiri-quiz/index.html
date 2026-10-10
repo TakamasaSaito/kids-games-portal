@@ -173,6 +173,21 @@
   opacity: 0.5;
 }
 
+.choice-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-start);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 .choice-speak {
   flex-shrink: 0;
   touch-action: manipulation;
@@ -331,7 +346,6 @@
 
   <div class="feedback-area">
     <div class="retry-msg" id="retry-msg" hidden>もういちど えらんでみよう</div>
-    <div class="explanation-box" id="explanation" hidden></div>
   </div>
 
   <div class="action-row">
@@ -401,9 +415,9 @@
 'use strict';
 
 // ===== 定数 =====
-const ROUND_SIZE    = 10;  // JSON の defaults.roundSize(5) をコード側で上書き
-const STORAGE_KEY   = 'monoshiri-quiz-v1';
-const DATA_VERSION  = 1;   // localStorage データ形式のバージョン
+const ROUND_SIZE  = 10;  // JSON の defaults.roundSize(5) をコード側で上書き(おまかせ目標値)
+const STORAGE_KEY = 'monoshiri-quiz-v1';
+const DATA_VERSION = 1;  // localStorage データ形式のバージョン
 
 // ===== ゲーム状態 =====
 const GameState = createGameState(STORAGE_KEY, () => ({
@@ -420,6 +434,11 @@ let selectedCatId = 'all';
 let selectedDiff  = 1;
 
 // ===== ユーティリティ =====
+function buildSpeechText(q) {
+  const parts = q.shuffledChoices.map((c, i) => `${i + 1}、${c.spokenLabel}`).join('。');
+  return `${q.spokenPrompt}。${parts}。えらんでね`;
+}
+
 function shuffle(arr) {
   arr = arr.slice();
   for (let i = arr.length - 1; i > 0; i--) {
@@ -552,7 +571,7 @@ function startGame() {
   currentIndex = 0;
 
   UICommon.showScreen('game');
-  UICommon.renderProgress(0, ROUND_SIZE);
+  UICommon.renderProgress(0, currentRound.length);
   renderQuestion();
 }
 
@@ -573,12 +592,16 @@ function renderQuestion() {
   const choicesEl = document.getElementById('choices');
   choicesEl.innerHTML = '';
 
-  q.shuffledChoices.forEach(choice => {
+  q.shuffledChoices.forEach((choice, idx) => {
     const card = document.createElement('div');
     card.className = 'choice-card';
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
     card.dataset.choiceId = choice.id;
+
+    const numEl = document.createElement('span');
+    numEl.className = 'choice-num';
+    numEl.textContent = String(idx + 1);
 
     const speakBtn = document.createElement('button');
     speakBtn.className = 'choice-speak';
@@ -594,6 +617,7 @@ function renderQuestion() {
     labelEl.className = 'choice-label';
     labelEl.textContent = choice.label;
 
+    card.appendChild(numEl);
     card.appendChild(speakBtn);
     card.appendChild(labelEl);
     card.addEventListener('click', () => handleAnswer(q, choice));
@@ -606,13 +630,8 @@ function renderQuestion() {
     choicesEl.appendChild(card);
   });
 
-  UICommon.renderProgress(currentIndex, ROUND_SIZE);
-
-  // 問題文と全選択肢をまとめて読み上げ
-  Speech.speak(
-    q.spokenPrompt + '。' +
-    q.shuffledChoices.map(c => c.spokenLabel).join('。') + '。'
-  );
+  UICommon.renderProgress(currentIndex, currentRound.length);
+  Speech.speak(buildSpeechText(q));
 }
 
 // ===== 回答処理 =====
@@ -625,7 +644,6 @@ function handleAnswer(q, choice) {
   const cards = document.querySelectorAll('#choices .choice-card');
 
   if (isCorrect) {
-    // 初回回答が正解かどうかを記録（null のまま = まだ初回未確定）
     if (q._firstAnswerCorrect === null) q._firstAnswerCorrect = true;
     answerLocked = true;
     cards.forEach(card => {
@@ -637,15 +655,9 @@ function handleAnswer(q, choice) {
     document.getElementById('skip-btn').hidden   = true;
     document.getElementById('btn-next-q').hidden = false;
 
-    const expEl = document.getElementById('explanation');
-    expEl.textContent = q.explanation;
-    expEl.hidden = false;
-
     AudioEngine.playCorrect();
     UICommon.jumpCharacter();
     UICommon.spawnStars(document.querySelector('#choices .choice-card.correct'));
-
-    Speech.speak(q.spokenExplanation);
   } else {
     // 初回回答が不正解
     if (q._firstAnswerCorrect === null) q._firstAnswerCorrect = false;
@@ -682,7 +694,7 @@ function advanceQuestion(skipped = false) {
   recordHistory(q, skipped);
 
   currentIndex++;
-  UICommon.renderProgress(currentIndex, ROUND_SIZE);
+  UICommon.renderProgress(currentIndex, currentRound.length);
 
   if (currentIndex >= currentRound.length) {
     // recentIds を更新して保存
@@ -736,11 +748,7 @@ UICommon.init({
   },
   onSpeakGame: () => {
     if (!currentRound[currentIndex]) return;
-    const q = currentRound[currentIndex];
-    Speech.speak(
-      q.spokenPrompt + '。' +
-      q.shuffledChoices.map(c => c.spokenLabel).join('。') + '。'
-    );
+    Speech.speak(buildSpeechText(currentRound[currentIndex]));
   },
   onNextClear: () => {
     buildSelectScreen();
