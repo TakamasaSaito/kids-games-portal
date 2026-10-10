@@ -36,8 +36,8 @@
     "title": "ものしりクイズ",
     "subtitle": "しらないことをおぼえよう！",
     "emoji": "💡",
-    "path": null,
-    "status": "coming-soon"
+    "path": "games/monoshiri-quiz/",
+    "status": "live"
   },
   {
     "id": "meiro",
