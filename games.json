@@ -3,7 +3,7 @@
     "id": "hiragana-hunt",
     "title": "ひらがなたからさがし",
     "subtitle": "もじをさがしてみよう！",
-    "emoji": "🦊",
+    "emoji": "🔍",
     "path": "games/hiragana-hunt/",
     "status": "live"
   },
@@ -11,7 +11,7 @@
     "id": "counting-game",
     "title": "いちにのぽん!",
     "subtitle": "かずをかぞえてみよう！",
-    "emoji": "🦊",
+    "emoji": "🍎",
     "path": "games/counting-game/",
     "status": "live"
   },
@@ -19,7 +19,7 @@
     "id": "compare-game",
     "title": "くらべっこ",
     "subtitle": "どっちがおおきいかな？",
-    "emoji": "🦊",
+    "emoji": "⚖️",
     "path": "games/compare-game/",
     "status": "live"
   },
