@@ -254,6 +254,22 @@
   font-size: clamp(16px, 4vmin, 24px);
   padding: 0.55em 1em;
 }
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.load-error {
+  font-size: clamp(13px, 3.3vmin, 18px);
+  color: rgba(255,255,255,0.95);
+  text-align: center;
+  padding: 8px 16px;
+  background: rgba(220,53,69,0.35);
+  border-radius: 10px;
+  max-width: 320px;
+}
 </style>
 </head>
 <body>
@@ -269,7 +285,8 @@
   <span class="character-idle" id="char-start" aria-hidden="true">🦉</span>
   <div class="app-title">ものしり<br>クイズ</div>
   <div class="app-subtitle">なにをしっているかな？</div>
-  <button class="btn-primary" id="btn-start" aria-label="はじめる">はじめる</button>
+  <button class="btn-primary" id="btn-start" aria-label="はじめる" disabled>よみこみちゅう…</button>
+  <div class="load-error" id="load-error" hidden>よみこみに しっぱい しました。ページを よみなおしてください。</div>
   <button class="gear-btn" id="btn-gear" aria-label="せってい">⚙
     <svg class="gear-ring" viewBox="0 0 54 54" aria-hidden="true">
       <circle class="gear-ring-fill" cx="27" cy="27" r="27"/>
@@ -345,7 +362,20 @@
       <span id="volume-label">オン</span>
     </div>
     <button class="btn-modal danger" id="btn-reset-confirm">しんちょくをリセット</button>
+    <button class="btn-modal danger" id="btn-history-confirm">きろくをけす</button>
     <button class="btn-modal cancel" id="btn-parent-close" style="width:100%">とじる</button>
+  </div>
+</div>
+
+<!-- HISTORY DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-history">
+  <div class="modal-box">
+    <div class="modal-title">きろくをけしますか？</div>
+    <div class="modal-body">「まだあそんでいない」などの じゅんばんが リセットされます。</div>
+    <div class="modal-row">
+      <button class="btn-modal danger" id="btn-history-do">けす</button>
+      <button class="btn-modal cancel" id="btn-history-cancel">もどる</button>
+    </div>
   </div>
 </div>
 
@@ -371,13 +401,16 @@
 'use strict';
 
 // ===== 定数 =====
-const ROUND_SIZE  = 10;  // JSON の defaults.roundSize(5) をコード側で上書き
-const STORAGE_KEY = 'monoshiri-quiz-v1';
+const ROUND_SIZE    = 10;  // JSON の defaults.roundSize(5) をコード側で上書き
+const STORAGE_KEY   = 'monoshiri-quiz-v1';
+const DATA_VERSION  = 1;   // localStorage データ形式のバージョン
 
 // ===== ゲーム状態 =====
 const GameState = createGameState(STORAGE_KEY, () => ({
-  totalCorrect: 0,
-  recentIds: [],
+  dataVersion:     DATA_VERSION,
+  totalCorrect:    0,
+  recentIds:       [],
+  questionHistory: {},  // { [qId]: { played, firstCorrect, skipped, lastPlayedAt } }
 }));
 let state = null;
 
@@ -431,19 +464,35 @@ function selectCategory(catId) {
   });
 }
 
+// ===== 出題優先度 =====
+// 0: まだ出ていない  1: 出たが初回正解なし  2: 初回正解あり
+function getPriority(q, history) {
+  const rec = (history || {})[q.id];
+  if (!rec || rec.played === 0) return 0;
+  if (rec.firstCorrect === 0) return 1;
+  return 2;
+}
+
 // ===== ラウンド構築 =====
 // おまかせ: 1ジャンル最大2問・5ジャンル以上(10問÷2=5ジャンル必須)
 // 単一ジャンル指定: ジャンル制限なし
 // 最近20問のIDを優先的に回避し、候補不足時は fallback から補充
-function buildRound(questions, catId, diff, recentIds) {
+// 優先順: まだ出ていない → 初回不正解/スキップ → 既に正解
+function buildRound(questions, catId, diff, recentIds, history) {
   const pool = questions.filter(q =>
     q.enabled &&
     (catId === 'all' || q.categoryId === catId) &&
     q.difficulty === diff
   );
 
-  const preferred = shuffle(pool.filter(q => !recentIds.includes(q.id)));
-  const fallback  = shuffle(pool.filter(q =>  recentIds.includes(q.id)));
+  // シャッフル後に優先度順でソート（同優先度内はランダム）
+  function sortByPriority(arr) {
+    const shuffled = shuffle(arr);
+    return shuffled.sort((a, b) => getPriority(a, history) - getPriority(b, history));
+  }
+
+  const preferred = sortByPriority(pool.filter(q => !recentIds.includes(q.id)));
+  const fallback  = sortByPriority(pool.filter(q =>  recentIds.includes(q.id)));
 
   const selected    = [];
   const usedIds     = new Set();
@@ -497,7 +546,8 @@ function startGame() {
     quizData.questions,
     selectedCatId,
     selectedDiff,
-    state.recentIds || []
+    state.recentIds || [],
+    state.questionHistory || {}
   );
   currentIndex = 0;
 
@@ -512,6 +562,7 @@ let answerLocked = false;
 function renderQuestion() {
   const q = currentRound[currentIndex];
   answerLocked = false;
+  q._firstAnswerCorrect = null;  // null=未回答 true=初回正解 false=初回不正解
 
   document.getElementById('quiz-prompt').textContent = q.prompt;
   document.getElementById('retry-msg').hidden    = true;
@@ -574,6 +625,8 @@ function handleAnswer(q, choice) {
   const cards = document.querySelectorAll('#choices .choice-card');
 
   if (isCorrect) {
+    // 初回回答が正解かどうかを記録（null のまま = まだ初回未確定）
+    if (q._firstAnswerCorrect === null) q._firstAnswerCorrect = true;
     answerLocked = true;
     cards.forEach(card => {
       card.classList.add('locked');
@@ -594,6 +647,8 @@ function handleAnswer(q, choice) {
 
     Speech.speak(q.spokenExplanation);
   } else {
+    // 初回回答が不正解
+    if (q._firstAnswerCorrect === null) q._firstAnswerCorrect = false;
     // 外したカードを無効化し、残りは選び直せる
     cards.forEach(card => {
       if (card.dataset.choiceId === choice.id) {
@@ -606,14 +661,32 @@ function handleAnswer(q, choice) {
   }
 }
 
+// ===== 問題履歴の記録 =====
+function recordHistory(q, skipped) {
+  if (!state.questionHistory) state.questionHistory = {};
+  const prev = state.questionHistory[q.id] ||
+    { played: 0, firstCorrect: 0, skipped: 0, lastPlayedAt: null };
+  state.questionHistory[q.id] = {
+    played:       prev.played + 1,
+    firstCorrect: prev.firstCorrect + ((!skipped && q._firstAnswerCorrect === true) ? 1 : 0),
+    skipped:      prev.skipped + (skipped ? 1 : 0),
+    lastPlayedAt: new Date().toISOString(),
+  };
+  GameState.save(state);
+}
+
 // ===== 次の問題へ進む =====
-function advanceQuestion() {
+// skipped: スキップボタンで進む場合 true
+function advanceQuestion(skipped = false) {
+  const q = currentRound[currentIndex];
+  recordHistory(q, skipped);
+
   currentIndex++;
   UICommon.renderProgress(currentIndex, ROUND_SIZE);
 
   if (currentIndex >= currentRound.length) {
     // recentIds を更新して保存
-    const roundIds = currentRound.map(q => q.id);
+    const roundIds = currentRound.map(r => r.id);
     state.recentIds = [...(state.recentIds || []), ...roundIds].slice(-20);
     GameState.save(state);
 
@@ -635,13 +708,23 @@ fetch('data/quiz_questions_300.json')
   .then(data => {
     quizData = data;
     buildSelectScreen();
+    const btn = document.getElementById('btn-start');
+    btn.disabled = false;
+    btn.textContent = 'はじめる';
   })
   .catch(() => {
     loadError = true;
+    document.getElementById('load-error').hidden = false;
   });
 
 // ===== BOOT =====
 state = GameState.load();
+// データ形式が変わった場合は履歴だけクリアして続行
+if (state.dataVersion !== DATA_VERSION) {
+  state.questionHistory = {};
+  state.dataVersion = DATA_VERSION;
+  GameState.save(state);
+}
 
 UICommon.init({
   // R1: UICommon が btn-start タップ時に AudioEngine.resume / AudioPlayer.unlock /
@@ -701,19 +784,38 @@ document.getElementById('btn-start-game').addEventListener('click', () => {
   startGame();
 });
 
+// ===== HISTORY MODAL イベント =====
+
+document.getElementById('btn-history-confirm').addEventListener('click', () => {
+  document.getElementById('modal-parent').classList.remove('active');
+  document.getElementById('modal-history').classList.add('active');
+});
+
+document.getElementById('btn-history-do').addEventListener('click', () => {
+  state.questionHistory = {};
+  state.recentIds = [];
+  GameState.save(state);
+  document.getElementById('modal-history').classList.remove('active');
+});
+
+document.getElementById('btn-history-cancel').addEventListener('click', () => {
+  document.getElementById('modal-history').classList.remove('active');
+  document.getElementById('modal-parent').classList.add('active');
+});
+
 // ===== GAME SCREEN イベント =====
 
 document.getElementById('skip-btn').addEventListener('click', () => {
   if (answerLocked) return;
   Speech.cancel();
   AudioEngine.playClick();
-  advanceQuestion();
+  advanceQuestion(true);   // スキップ
 });
 
 document.getElementById('btn-next-q').addEventListener('click', () => {
   Speech.cancel();
   AudioEngine.playClick();
-  advanceQuestion();
+  advanceQuestion(false);  // 正解後「つぎへ」
 });
 </script>
 </body>
