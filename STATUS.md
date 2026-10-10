@@ -6,11 +6,11 @@
 - [x] **ステップ2**: compare-game を games/ に統合
   - `audio/count_1.wav`〜`count_10.wav`（10ファイル）はコピーしない（未使用確認済み）
   - 統合後 games.json の status を `"live"` に変更
-- [ ] **ステップ3**: counting-game・hiragana-hunt を games/ に統合
-  - hiragana-hunt と counting-game の `Speech.speak()` を、音声オフ時に TTS も止まる
-    動作（compare-game 準拠）に揃える
-  - 各ゲームの🏠ボタンに postMessage 送信を追加
-  - 統合後 games.json の status を `"live"` に変更
+- [x] **ステップ3**: counting-game・hiragana-hunt を games/ に統合
+  - Speech.speak / speakCount: `if (!AudioEngine.isEnabled()) return;` を先頭に追加（TTS漏れ修正）
+  - btn-home-game: postMessage go-home in iframe, else showScreen start
+  - hiragana-hunt の btn-home-level はゲーム内遷移（コース選択→スタート）のため変更せず
+  - games.json の status を `"live"` に変更
 - [ ] **ステップ4**: 旧3リポジトリの README に「ポータルへの誘導リンク」を追記
 - [ ] **ステップ5**: shared/ への共通化
   - **追加予定の5本を作る前に実施する**
@@ -23,4 +23,4 @@
 
 ## 次の一手
 
-ステップ3: counting-game・hiragana-hunt を `games/` に統合し、games.json の status を `"live"` に変更する。
+ステップ4: 旧3リポジトリの README にポータルへの誘導リンクを追記する。
