@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TODO: ゲーム名(短め)">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-512.png">
+<title>TODO: ゲームタイトル</title>
+<link rel="stylesheet" href="../../shared/game-shell.css?v=1">
+<style>
+/* ===== TODO: ゲーム固有CSS =====
+   shared/game-shell.css が読み込まれたあとにここで上書きする。
+   背景色・アクセントカラーの変更例:
+   :root {
+     --bg-start: #2ecc71;
+     --bg-end:   #27ae60;
+     --accent:   #f1c40f;
+   }
+   共通から変えたい部分だけ書き、それ以外は書かない。
+*/
+
+/* ===== ゲーム画面レイアウト (TODO: 実際の盤面に合わせて調整) ===== */
+#screen-game {
+  justify-content: space-between;
+  padding-top:    max(12px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  gap: 3vmin;
+}
+
+/* ダミーボタン: 動作確認後に削除する */
+.btn-dummy {
+  touch-action: manipulation;
+  margin: auto;
+  padding: 1em 2.5em;
+  font-size: clamp(18px, 5vmin, 28px);
+  font-weight: 900;
+  background: rgba(255,255,255,0.9);
+  color: #2d3436;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.btn-dummy:active { transform: scale(0.95); }
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="screen-splash" class="screen active">
+  <!-- TODO: ゲームを象徴する絵文字に変える -->
+  <span class="splash-fox" aria-hidden="true">🎮</span>
+  <div class="splash-title">TODO:<br>タイトル</div>
+</div>
+
+<!-- START SCREEN -->
+<div id="screen-start" class="screen">
+  <!-- TODO: 絵文字 -->
+  <span class="character-idle" id="char-start" aria-hidden="true">🎮</span>
+  <div class="app-title">TODO:<br>タイトル</div>
+  <div class="app-subtitle">TODO: キャッチコピー</div>
+  <button class="btn-primary" id="btn-start" aria-label="はじめる">はじめる</button>
+  <!-- R4: btn-gear は UICommon が管理する。id を変えない -->
+  <button class="gear-btn" id="btn-gear" aria-label="せってい">⚙
+    <svg class="gear-ring" viewBox="0 0 54 54" aria-hidden="true">
+      <circle class="gear-ring-fill" cx="27" cy="27" r="27"/>
+    </svg>
+  </button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <!-- R4: btn-home-game は UICommon が管理する(iframe→go-home / 単体→start) -->
+  <button class="home-btn" id="btn-home-game" aria-label="ホームにもどる">🏠</button>
+
+  <!-- TODO: 出題エリア(問題文、絵、お手本など)をここに置く -->
+
+  <!-- TODO: 絵文字 -->
+  <span class="character-game" id="char-game" aria-hidden="true">🎮</span>
+
+  <!-- TODO: 🔊 ボタンは問題を読み上げる。不要ならHTML・onSpeakGame両方を消す -->
+  <button class="speak-btn" id="btn-speak" aria-label="もういちどよむ">🔊</button>
+
+  <!-- TODO: 盤面(タイル・入力欄・選択肢など)をここに置く -->
+
+  <!-- ===== ダミーボタン: 動作確認専用。実装時に削除する =====
+       押すと正解演出(AudioEngine.playCorrect / UICommon.spawnStars / jumpCharacter)が出て、
+       DUMMY_QUESTIONS 回押すとクリア画面へ進む。 -->
+  <button class="btn-dummy" id="btn-dummy-correct">せいかい (ダミー)</button>
+
+  <div class="progress-area">
+    <span class="progress-label" id="progress-label">0 / 5</span>
+    <div class="progress-dots" id="progress-dots"></div>
+  </div>
+</div>
+
+<!-- CLEAR SCREEN -->
+<div id="screen-clear" class="screen">
+  <div class="clear-title" id="clear-title">すごい！</div>
+  <!-- TODO: 絵文字 -->
+  <div class="clear-character" aria-hidden="true">🎮✨</div>
+  <div class="clear-subtitle" id="clear-subtitle">ぜんぶ できたね！</div>
+  <div class="clear-buttons">
+    <button class="btn-primary" id="btn-next" style="width:100%">もういちど</button>
+    <button class="btn-secondary" id="btn-quit" style="width:100%">おわる</button>
+  </div>
+  <div class="confetti-container" id="confetti-container"></div>
+</div>
+
+<!-- PARENT MENU MODAL -->
+<div class="modal-overlay" id="modal-parent">
+  <div class="modal-box">
+    <div class="modal-title">⚙ せってい（おとなむけ）</div>
+    <!-- TODO: 統計を表示する場合は次の行のコメントを外す(R5: なければ渡さなくてよい)
+    <div id="parent-stats"></div> -->
+    <div class="volume-toggle">
+      <span>おと</span>
+      <button class="toggle-switch on" id="toggle-volume" aria-label="音量切り替え"></button>
+      <span id="volume-label">オン</span>
+    </div>
+    <button class="btn-modal danger" id="btn-reset-confirm">しんちょくをリセット</button>
+    <button class="btn-modal cancel" id="btn-parent-close" style="width:100%">とじる</button>
+    <!-- TODO: クレジット表記 -->
+  </div>
+</div>
+
+<!-- RESET CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal-box">
+    <div class="modal-title">リセットしますか？</div>
+    <div class="modal-body">ゲームのしんちょくが すべてきえます。</div>
+    <div class="modal-row">
+      <button class="btn-modal danger" id="btn-reset-do">リセット</button>
+      <button class="btn-modal cancel" id="btn-reset-cancel">もどる</button>
+    </div>
+  </div>
+</div>
+
+<!-- shared/ 読み込み順は決定メモ(docs/decisions/001-shared-design.md)のとおり -->
+<script src="../../shared/audio-engine.js?v=1"></script>
+<script src="../../shared/audio-player.js?v=1"></script>
+<script src="../../shared/speech.js?v=1"></script>
+<script src="../../shared/game-state.js?v=1"></script>
+<script src="../../shared/ui-common.js?v=1"></script>
+<script>
+'use strict';
+
+// ===== TODO: ゲーム固有定数 =====
+// const STORAGE_KEY      = 'my-game-v1'; // ← ゲームごとに一意にする
+// const QUESTIONS_PER_SET = 10;
+// const NEXT_DELAY        = 2000;         // ms
+
+// TODO: 音声ファイルリスト → AudioPlayer.preload() に渡す
+// const PRELOAD_FILES = ['question.wav', 'correct.wav', 'clear.wav'];
+
+// TODO: GameState を有効化する (STORAGE_KEY を定義してから)
+// const GameState = createGameState(STORAGE_KEY, () => ({
+//   totalCorrect: 0,
+//   // ← ゲーム固有のフィールドを追加
+// }));
+
+// ===== ダミー実装 (動作確認専用。実装時に DUMMY_ ブロックごと削除) =====
+const DUMMY_STORAGE_KEY = '_template-v1';
+const DUMMY_QUESTIONS   = 5;
+const GameState = createGameState(DUMMY_STORAGE_KEY, () => ({ totalCorrect: 0 }));
+
+let state   = null;
+let session = {};
+
+function startGame() {
+  session = { questionIndex: 0 };
+  UICommon.showScreen('game');
+  UICommon.renderProgress(0, DUMMY_QUESTIONS);
+  // TODO: nextQuestion() を呼ぶ
+}
+
+// ダミーの正解処理
+document.getElementById('btn-dummy-correct').addEventListener('click', () => {
+  session.questionIndex = (session.questionIndex || 0) + 1;
+  state.totalCorrect++;
+
+  AudioEngine.playCorrect();
+  UICommon.spawnStars(document.getElementById('btn-dummy-correct'));
+  UICommon.jumpCharacter();
+  UICommon.renderProgress(session.questionIndex, DUMMY_QUESTIONS);
+
+  if (session.questionIndex >= DUMMY_QUESTIONS) {
+    GameState.save(state);
+    setTimeout(() => {
+      AudioEngine.playClear();
+      // TODO: Speech.speak('すごい！ぜんぶできたね！', 'clear.wav');
+      UICommon.spawnConfetti();
+      UICommon.showScreen('clear');
+    }, 1200);
+  }
+});
+
+// ===== BOOT =====
+state = GameState.load();
+// TODO: AudioPlayer.preload(PRELOAD_FILES);
+UICommon.init({
+  // R1: btn-start タップ時、UICommon が AudioEngine.resume / AudioPlayer.unlock /
+  //     Speech.init を同期的に先頭で呼ぶ(ここに書かなくてよい)
+  onStart: () => {
+    // TODO: コース選択やゲーム固有の初期化をここに書く
+    startGame();
+  },
+  onSpeakGame: () => {
+    // TODO: Speech.speak('...', 'question.wav');
+  },
+  onNextClear: () => {
+    // TODO: 次のコース・レベルへの遷移処理があればここに書く
+    startGame();
+  },
+  onReset: () => {
+    state = GameState.reset();
+    // TODO: 必要なら追加のリセット処理
+  },
+  // renderStats: () => {
+  //   // TODO: #parent-stats に innerHTML を書く場合はここ
+  //   // document.getElementById('parent-stats').innerHTML = `...`;
+  // },
+
+  // extraScreens: { level: document.getElementById('screen-level') },
+  // ↑ コース選択など追加画面がある場合にのみ記述する (hiragana-hunt を参照)
+});
+</script>
+</body>
+</html>
