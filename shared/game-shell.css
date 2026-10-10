@@ -1,0 +1,487 @@
+/* =====================================================
+   game-shell.css  —  kids-games-portal 共通スタイル
+   ステップ5-0 (2026-10-10) で抽出
+   ゲーム固有CSS (ゲーム画面レイアウト・統計グリッド等) は
+   各 games/<id>/index.html のインライン <style> に残す
+   ===================================================== */
+
+/* ===== CSS RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ===== CSS VARIABLES ===== */
+:root {
+  --bg-start:  #667eea;
+  --bg-end:    #764ba2;
+  --accent:    #FECA57;
+  --white:     #fff;
+  --text-dark: #2d3436;
+}
+
+/* ===== BASE ===== */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+}
+
+body {
+  background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* ===== SCREEN SYSTEM ===== */
+.screen {
+  display: none;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 16px);
+  position: absolute;
+  inset: 0;
+}
+.screen.active { display: flex; }
+
+/* ===== START SCREEN ===== */
+#screen-start { gap: 4vmin; position: relative; }
+
+.app-title {
+  font-size: clamp(36px, 11vmin, 72px);
+  font-weight: 900;
+  color: var(--white);
+  text-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.app-subtitle {
+  font-size: clamp(16px, 4vmin, 28px);
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+}
+
+.character-idle {
+  font-size: clamp(60px, 18vmin, 120px);
+  animation: float 3s ease-in-out infinite;
+  display: block;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ===== BUTTONS ===== */
+.btn-primary {
+  touch-action: manipulation;
+  background: var(--accent);
+  color: var(--text-dark);
+  border: none;
+  border-radius: 50px;
+  font-size: clamp(22px, 6vmin, 42px);
+  font-weight: 900;
+  padding: 0.6em 2em;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.1s, box-shadow 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-primary:active { transform: scale(0.95); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+.btn-secondary {
+  touch-action: manipulation;
+  background: rgba(255,255,255,0.25);
+  color: var(--white);
+  border: 2px solid rgba(255,255,255,0.6);
+  border-radius: 50px;
+  font-size: clamp(14px, 3.5vmin, 24px);
+  font-weight: 700;
+  padding: 0.5em 1.5em;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-secondary:active { transform: scale(0.95); background: rgba(255,255,255,0.35); }
+
+/* ===== GEAR BUTTON (⚙ 長押し親メニュー) ===== */
+/* R6統一: compare-game の値をそのまま採用 */
+.gear-btn {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  right: max(16px, env(safe-area-inset-right));
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 100;
+}
+.gear-btn.holding { background: rgba(255,255,255,0.30); }
+.gear-ring {
+  position: absolute;
+  inset: -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.gear-btn.holding .gear-ring { opacity: 1; }
+.gear-ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 169.6;
+  stroke-dashoffset: 169.6;
+  transition: none;
+}
+.gear-btn.holding .gear-ring-fill {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 3s linear;
+}
+
+/* ===== HOME BUTTON (🏠) ===== */
+/* R6統一: タップ領域は大きい方 → 44px × 44px / icon 20px */
+.home-btn {
+  touch-action: manipulation;
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  background: rgba(255,255,255,0.18);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 10;
+}
+.home-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.9); }
+
+/* ===== SPEAK BUTTON (🔊) ===== */
+/* R6統一: タップ領域は大きい方 → max-size 64px */
+.speak-btn {
+  touch-action: manipulation;
+  background: rgba(255,255,255,0.25);
+  border: 2px solid rgba(255,255,255,0.6);
+  border-radius: 50%;
+  width: clamp(44px, 10vmin, 64px);
+  height: clamp(44px, 10vmin, 64px);
+  font-size: clamp(20px, 5vmin, 32px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.speak-btn:active { transform: scale(0.9); }
+
+/* ===== CHARACTER (ゲーム中) ===== */
+/* R6統一: compare-game の値 */
+.character-game {
+  font-size: clamp(28px, 7vmin, 52px);
+  transition: transform 0.2s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.character-game.jump { animation: jump 0.5s ease-out; }
+@keyframes jump {
+  0%   { transform: translateY(0) scale(1); }
+  30%  { transform: translateY(-20px) scale(1.1); }
+  60%  { transform: translateY(-8px) scale(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* ===== PROGRESS ===== */
+.progress-area {
+  display: flex;
+  align-items: center;
+  gap: 1.5vmin;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0.5em;
+  flex-shrink: 0;
+}
+
+.progress-label {
+  color: rgba(255,255,255,0.8);
+  font-size: clamp(12px, 3vmin, 18px);
+  font-weight: 700;
+}
+
+.progress-dots { display: flex; gap: clamp(4px, 1.5vmin, 8px); }
+
+.progress-dot {
+  width: clamp(10px, 2.5vmin, 16px);
+  height: clamp(10px, 2.5vmin, 16px);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  border: 2px solid rgba(255,255,255,0.5);
+  transition: background 0.2s, transform 0.2s;
+}
+.progress-dot.filled {
+  background: var(--accent);
+  border-color: #f39c12;
+  transform: scale(1.1);
+}
+
+/* ===== CLEAR SCREEN ===== */
+#screen-clear { gap: 3vmin; position: relative; overflow: hidden; }
+
+.clear-title {
+  font-size: clamp(36px, 12vmin, 80px);
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  animation: pop-in 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes pop-in {
+  from { transform: scale(0.3); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.clear-character {
+  font-size: clamp(64px, 20vmin, 130px);
+  animation: celebrate 0.6s ease-out 0.3s both;
+}
+@keyframes celebrate {
+  0%   { transform: scale(0) rotate(-20deg); }
+  60%  { transform: scale(1.2) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.clear-subtitle {
+  font-size: clamp(18px, 5vmin, 36px);
+  color: var(--white);
+  font-weight: 700;
+  text-align: center;
+}
+
+.clear-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 2vmin;
+  align-items: center;
+  width: 100%;
+  max-width: min(320px, 85vw);
+}
+
+/* ===== CONFETTI ===== */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  animation: confetti-fall linear forwards;
+  border-radius: 2px;
+}
+@keyframes confetti-fall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ===== STAR BURST ===== */
+.star-burst {
+  position: fixed;
+  pointer-events: none;
+  z-index: 150;
+  font-size: clamp(20px, 5vmin, 36px);
+  animation: star-fly 0.8s ease-out forwards;
+}
+@keyframes star-fly {
+  0%   { transform: translate(0,0) scale(0.5); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.2); opacity: 0; }
+}
+
+/* ===== PARENT MENU MODAL ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+
+/* R6統一: max-height:90vh; overflow-y:auto を共通に含める */
+.modal-box {
+  background: var(--white);
+  border-radius: 24px;
+  padding: 1.5em;
+  width: min(340px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: clamp(16px, 4.5vmin, 22px);
+  font-weight: 900;
+  color: var(--text-dark);
+}
+
+.modal-body {
+  font-size: clamp(14px, 3.5vmin, 18px);
+  color: #636e72;
+  text-align: center;
+}
+
+.modal-row { display: flex; gap: 1em; width: 100%; justify-content: center; }
+
+.btn-modal {
+  touch-action: manipulation;
+  flex: 1;
+  border: none;
+  border-radius: 50px;
+  padding: 0.7em 1em;
+  font-size: clamp(14px, 3.5vmin, 18px);
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-modal.danger  { background: #e17055; color: var(--white); }
+.btn-modal.cancel  { background: #dfe6e9; color: var(--text-dark); }
+.btn-modal:active  { transform: scale(0.95); }
+
+.volume-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  font-size: clamp(14px, 3.5vmin, 18px);
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.toggle-switch {
+  touch-action: manipulation;
+  width: 52px;
+  height: 28px;
+  background: #dfe6e9;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+  flex-shrink: 0;
+}
+.toggle-switch.on { background: #54A0FF; }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: var(--white);
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.toggle-switch.on::after { transform: translateX(24px); }
+
+.modal-credit {
+  font-size: clamp(10px, 2.5vmin, 12px);
+  color: #b2bec3;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ===== PARENT STATS (共通行) ===== */
+.parent-stats-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: clamp(13px, 3vmin, 15px);
+  color: var(--text-dark);
+  padding: 0.2em 0.4em;
+  border-bottom: 1px solid #f0f0f0;
+}
+.stat-row strong { font-weight: 900; }
+
+/* ===== SPLASH SCREEN ===== */
+#screen-splash { gap: 5vmin; cursor: pointer; }
+.splash-fox {
+  font-size: clamp(90px, 24vmin, 160px);
+  display: block;
+  animation: splash-bounce 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.splash-title {
+  font-size: clamp(32px, 10vmin, 72px);
+  font-weight: 900;
+  color: var(--white);
+  text-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  text-align: center;
+  line-height: 1.2;
+  animation: splash-fadein 0.5s ease both 0.55s;
+}
+@keyframes splash-bounce {
+  0%   { transform: scale(0) translateY(-50px); opacity: 0; }
+  55%  { transform: scale(1.18) translateY(0);  opacity: 1; }
+  75%  { transform: scale(0.93) translateY(0); }
+  100% { transform: scale(1)    translateY(0);  opacity: 1; }
+}
+@keyframes splash-fadein {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== REDUCED MOTION (共通アニメのみ) ===== */
+/* ゲーム固有のアニメ (カード・タイル・絵文字 等) は各ゲームのCSSで宣言する */
+@media (prefers-reduced-motion: reduce) {
+  .character-idle,
+  .character-game.jump,
+  .clear-title,
+  .clear-character,
+  .star-burst,
+  .confetti-piece,
+  .splash-fox,
+  .splash-title,
+  .gear-ring-fill {
+    animation: none !important;
+    transition: none !important;
+  }
+}
