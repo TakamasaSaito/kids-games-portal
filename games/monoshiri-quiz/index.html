@@ -264,13 +264,6 @@
 }
 .skip-btn:active { transform: scale(0.95); }
 
-.next-q-btn {
-  flex: 1;
-  max-width: 200px;
-  font-size: clamp(16px, 4vmin, 24px);
-  padding: 0.55em 1em;
-}
-
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -352,7 +345,6 @@
 
   <div class="action-row">
     <button class="skip-btn" id="skip-btn">スキップ</button>
-    <button class="btn-primary next-q-btn" id="btn-next-q" hidden>つぎへ →</button>
   </div>
 </div>
 
@@ -420,6 +412,7 @@
 const ROUND_SIZE  = 10;  // JSON の defaults.roundSize(5) をコード側で上書き(おまかせ目標値)
 const STORAGE_KEY = 'monoshiri-quiz-v1';
 const DATA_VERSION = 1;  // localStorage データ形式のバージョン
+const CORRECT_ADVANCE_DELAY = 1500;  // 正解後、自動で次問題へ進むまでの待機時間(ms)
 
 // ===== ゲーム状態 =====
 const GameState = createGameState(STORAGE_KEY, () => ({
@@ -575,6 +568,7 @@ function buildRound(questions, catId, recentIds, history) {
 // ===== ゲーム開始 =====
 let currentRound = [];
 let currentIndex = 0;
+let correctTimer = null;  // 正解後の自動進行タイマー
 
 function startGame() {
   if (!quizData) return;
@@ -596,13 +590,14 @@ function startGame() {
 let answerLocked = false;
 
 function renderQuestion() {
+  if (correctTimer) { clearTimeout(correctTimer); correctTimer = null; }
+
   const q = currentRound[currentIndex];
   answerLocked = false;
   q._firstAnswerCorrect = null;  // null=未回答 true=初回正解 false=初回不正解
 
   document.getElementById('quiz-prompt').textContent = q.prompt;
   document.getElementById('retry-msg').hidden    = true;
-  document.getElementById('btn-next-q').hidden   = true;
   document.getElementById('skip-btn').hidden     = false;
 
   const choicesEl = document.getElementById('choices');
@@ -669,11 +664,11 @@ function handleAnswer(q, choice) {
 
     document.getElementById('retry-msg').hidden  = true;
     document.getElementById('skip-btn').hidden   = true;
-    document.getElementById('btn-next-q').hidden = false;
 
     AudioEngine.playCorrect();
     UICommon.jumpCharacter();
     UICommon.spawnStars(document.querySelector('#choices .choice-card.correct'));
+    correctTimer = setTimeout(() => { correctTimer = null; advanceQuestion(false); }, CORRECT_ADVANCE_DELAY);
   } else {
     // 初回回答が不正解
     if (q._firstAnswerCorrect === null) q._firstAnswerCorrect = false;
@@ -837,10 +832,14 @@ document.getElementById('skip-btn').addEventListener('click', () => {
   advanceQuestion(true);   // スキップ
 });
 
-document.getElementById('btn-next-q').addEventListener('click', () => {
-  Speech.cancel();
-  AudioEngine.playClick();
-  advanceQuestion(false);  // 正解後「つぎへ」
+// 🏠 押下時にタイマーをキャンセル（ui-common.js のリスナーと共存）
+document.getElementById('btn-home-game').addEventListener('click', () => {
+  if (correctTimer) { clearTimeout(correctTimer); correctTimer = null; }
+});
+
+// リセット実行時にタイマーをキャンセル（ui-common.js のリスナーと共存）
+document.getElementById('btn-reset-do').addEventListener('click', () => {
+  if (correctTimer) { clearTimeout(correctTimer); correctTimer = null; }
 });
 </script>
 </body>
