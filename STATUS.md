@@ -14,8 +14,11 @@
 - [ ] **ステップ4**: 旧3リポジトリの README に「ポータルへの誘導リンク」を追記
 - [ ] **ステップ5**: shared/ への共通化
   - **追加予定の5本を作る前に実施する**
-  - 対象: AudioEngine / AudioPlayer 骨格 / Speech 骨格 / 共通CSS（変数・ボタン・modal・confetti 等）
-  - 実施前に3本すべてで動作確認してからコミット
+  - [x] **5-0**: shared/ 6ファイル作成 (game-shell.css / audio-engine.js / audio-player.js / speech.js / game-state.js / ui-common.js)、決定メモ追加 (docs/decisions/001-shared-design.md)
+  - [ ] **5-1**: compare-game を shared/ に移行（試験台）
+  - [ ] **5-2**: counting-game を shared/ に移行
+  - [ ] **5-3**: hiragana-hunt を shared/ に移行
+  - [ ] **5-4**: games/_template/ 作成
 
 ## 近日公開（予定）
 
@@ -23,4 +26,4 @@
 
 ## 次の一手
 
-ステップ4: 旧3リポジトリの README にポータルへの誘導リンクを追記する。
+ステップ5-1: compare-game を shared/ に移行する（試験台）。

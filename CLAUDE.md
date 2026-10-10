@@ -59,6 +59,20 @@ README.md
 AudioEngine / Speech / 共通CSS など全ゲームが依存するコードを変更する場合は、
 `games/` 以下の3本すべてで動作確認（スタート→ゲーム→クリア）してからコミットする。
 
+### キャッシュバスティング (?v= ルール)
+
+shared/ のファイルを変更したら、3本すべての `index.html` で
+`?v=N` の番号を同じ値にインクリメントしてからコミットする。
+
+```html
+<link rel="stylesheet" href="../../shared/game-shell.css?v=2">
+<script src="../../shared/audio-engine.js?v=2"></script>
+<!-- 他の shared/ ファイルも同じ v= に揃える -->
+```
+
+- バージョンは `v=1` から始まり、shared/ の変更ごとに +1 する
+- 変更していない shared ファイルも番号を揃えること（揃えないとゲームによって版が混在する）
+
 ## プロジェクト管理方針
 
 本リポジトリは TakamasaSaito/portfolio-dashboard の MANAGEMENT.md に従う。
