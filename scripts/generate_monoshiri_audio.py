@@ -298,15 +298,20 @@ def load_age_map():
     return data['ageByQuestionId']
 
 
-def run_batch(base, speaker_id, items, out_dir, label):
-    # type: (str, int, list, str, str) -> List[str]
+def run_batch(base, speaker_id, items, out_dir, label, skip_existing=False):
+    # type: (str, int, list, str, str, bool) -> List[str]
     """items: list of (filename_without_ext, text, speed, pitch, inton)"""
     os.makedirs(out_dir, exist_ok=True)
     errors = []
     total = len(items)
+    skipped = 0
     for i, (fname, text, speed, pitch, inton) in enumerate(items, 1):
         norm_text = normalize_text(text)
         out_path = os.path.join(out_dir, f'{fname}.wav')
+        if skip_existing and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+            print(f'[{i:3d}/{total}] {fname}.wav  SKIP')
+            skipped += 1
+            continue
         print(f'[{i:3d}/{total}] {fname}.wav  "{norm_text}"', end=' ', flush=True)
         try:
             synthesize(base, norm_text, speaker_id, out_path, speed, pitch, inton)
@@ -315,6 +320,8 @@ def run_batch(base, speaker_id, items, out_dir, label):
             print(f'FAILED: {e}')
             errors.append(fname)
         time.sleep(0.05)
+    if skipped:
+        print(f'  (スキップ: {skipped}本 既存)')
     return errors
 
 
@@ -415,20 +422,22 @@ def _run_full(base, speaker_id, questions):
 
     choice_filename_map = build_choice_filename_map(questions)
 
-    # 番号 + 案内フレーズ
+    # 番号 (いち/に/さん の3種のみ) + 案内フレーズ
     print('--- 番号・案内フレーズ ---')
-    fixed_items = [(k, v[0], v[1], v[2], v[3]) for k, v in {**NUMBER_FILES}.items()]
-    # 案内フレーズは 1 種 (テスト結果で決める)
-    # end_erandene をデフォルトとして出力する
-    fixed_items.append(('end_erandene', 'えらんでね', SPEED_CHOICE, PITCH, INTON))
-    errs = run_batch(base, speaker_id, fixed_items, AUDIO_DIR, '固定フレーズ')
+    fixed_items = [
+        ('num_ichi', 'いち',     SPEED_CHOICE, PITCH, INTON),
+        ('num_ni',   'に',       SPEED_CHOICE, PITCH, INTON),
+        ('num_san',  'さん',     SPEED_CHOICE, PITCH, INTON),
+        ('end_erandene', 'えらんでね', SPEED_CHOICE, PITCH, INTON),
+    ]
+    errs = run_batch(base, speaker_id, fixed_items, AUDIO_DIR, '固定フレーズ', skip_existing=True)
 
     # 問題文 300 問
     print('\n--- 問題文 300 問 ---')
     q_items = []
     for q in questions:
         q_items.append((f'q_{q["id"].lower()}', q['spokenPrompt'], SPEED_QUESTION, PITCH, INTON))
-    errs += run_batch(base, speaker_id, q_items, AUDIO_DIR, '問題文')
+    errs += run_batch(base, speaker_id, q_items, AUDIO_DIR, '問題文', skip_existing=True)
 
     # 選択肢ラベル
     print('\n--- 選択肢ラベル ---')
@@ -440,7 +449,7 @@ def _run_full(base, speaker_id, questions):
             if lbl not in seen:
                 seen.add(lbl)
                 c_items.append((choice_filename_map[lbl], lbl, SPEED_CHOICE, PITCH, INTON))
-    errs += run_batch(base, speaker_id, c_items, AUDIO_DIR, '選択肢')
+    errs += run_batch(base, speaker_id, c_items, AUDIO_DIR, '選択肢', skip_existing=True)
 
     total_files = len(fixed_items) + len(q_items) + len(c_items)
     failed = len(errs)
