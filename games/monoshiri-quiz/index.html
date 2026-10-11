@@ -370,6 +370,11 @@
       <button class="toggle-switch on" id="toggle-volume" aria-label="音量切り替え"></button>
       <span id="volume-label">オン</span>
     </div>
+    <div class="volume-toggle">
+      <span>おんせい</span>
+      <button class="toggle-switch on" id="toggle-speech" aria-label="おんせい切り替え"></button>
+      <span id="speech-label">オン</span>
+    </div>
     <button class="btn-modal danger" id="btn-reset-confirm">しんちょくをリセット</button>
     <button class="btn-modal danger" id="btn-history-confirm">きろくをけす</button>
     <button class="btn-modal cancel" id="btn-parent-close" style="width:100%">とじる</button>
@@ -415,6 +420,30 @@ const ROUND_SIZE  = 10;  // JSON の defaults.roundSize(5) をコード側で上
 const STORAGE_KEY = 'monoshiri-quiz-v1';
 const DATA_VERSION = 1;  // localStorage データ形式のバージョン
 const CORRECT_ADVANCE_DELAY = 1500;  // 正解後、自動で次問題へ進むまでの待機時間(ms)
+const SKIP_LEAD_S = 0.6;  // 2本目以降の wav 先頭無音スキップ量(秒)
+const GAP_MS      = 150;  // 連続再生のつなぎ目の間(ms)
+const SPEECH_KEY  = 'monoshiri-speech-enabled';  // 音声オン/オフ保存キー
+
+// ===== 音声オン/オフ =====
+let speechEnabled = true;
+
+function loadSpeechEnabled() {
+  try {
+    const v = localStorage.getItem(SPEECH_KEY);
+    return v === null ? true : v === 'true';
+  } catch (e) { return true; }
+}
+
+function saveSpeechEnabled(v) {
+  try { localStorage.setItem(SPEECH_KEY, String(v)); } catch (e) {}
+}
+
+function updateSpeechUI() {
+  const btn = document.getElementById('toggle-speech');
+  const lbl = document.getElementById('speech-label');
+  if (btn) btn.classList.toggle('on', speechEnabled);
+  if (lbl) lbl.textContent = speechEnabled ? 'オン' : 'オフ';
+}
 
 // ===== 連続音声再生 =====
 // AudioPlayer は1ファイル単位のみのため、問題文→番号→選択肢→えらんでね の
@@ -423,26 +452,37 @@ const QuizAudio = (() => {
   const AUDIO_BASE = 'audio/';
   const pool = new Map();
   let chainId = 0;
+  let _version = '';
+
+  function setVersion(v) { _version = v || ''; }
+
+  function _url(f) {
+    return AUDIO_BASE + f + (_version ? '?v=' + _version : '');
+  }
 
   function preload(files) {
     files.forEach(f => {
       if (!f || pool.has(f)) return;
-      const a = new Audio(AUDIO_BASE + f);
+      const a = new Audio(_url(f));
       a.preload = 'auto';
       pool.set(f, a);
     });
   }
 
   // items: [{file, tts}]  file がない場合は tts のみで再生
+  // 1本目の wav はそのまま再生、2本目以降は先頭無音を SKIP_LEAD_S 秒スキップ
   function playSequence(items, gapMs) {
-    if (!AudioEngine.isEnabled()) return;
-    gapMs = (gapMs !== undefined) ? gapMs : 80;
+    if (!speechEnabled) return;
+    gapMs = (gapMs !== undefined) ? gapMs : GAP_MS;
     const id = ++chainId;
     let i = 0;
+    let isFirst = true;
 
     function next() {
       if (id !== chainId || i >= items.length) return;
       const item = items[i++];
+      const first = isFirst;
+      isFirst = false;
       const a = item.file ? pool.get(item.file) : null;
 
       if (!a) {
@@ -450,7 +490,7 @@ const QuizAudio = (() => {
         return;
       }
 
-      a.currentTime = 0;
+      a.currentTime = first ? 0 : SKIP_LEAD_S;
 
       function cleanup() {
         a.removeEventListener('ended', onEnded);
@@ -504,7 +544,7 @@ const QuizAudio = (() => {
     try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {}
   }
 
-  return { preload, playSequence, stop };
+  return { setVersion, preload, playSequence, stop };
 })();
 
 // ===== ゲーム状態 =====
@@ -743,6 +783,7 @@ function renderQuestion() {
     speakBtn.textContent = '🔊';
     speakBtn.addEventListener('click', e => {
       e.stopPropagation();
+      if (!speechEnabled) return;
       QuizAudio.stop();
       const fname = choiceFileMap[choice.spokenLabel];
       QuizAudio.playSequence([{ file: fname ? fname + '.wav' : null, tts: choice.spokenLabel }]);
@@ -772,7 +813,7 @@ function renderQuestion() {
   preloadQuestionAudio(currentRound[currentIndex + 1]);
 
   // 問題文 → いち+選択肢1 → に+選択肢2 → さん+選択肢3 → えらんでね の順に再生
-  QuizAudio.playSequence(buildAudioItems(q));
+  if (speechEnabled) QuizAudio.playSequence(buildAudioItems(q));
 }
 
 // ===== 回答処理 =====
@@ -810,7 +851,7 @@ function handleAnswer(q, choice) {
     });
     document.getElementById('retry-msg').hidden = false;
     AudioEngine.playWrong();
-    Speech.speak('もういちど えらんでみよう');
+    if (speechEnabled) Speech.speak('もういちど えらんでみよう');
   }
 }
 
@@ -864,6 +905,7 @@ Promise.all([
   quizData      = quizJson;
   ageMap        = ageJson.ageByQuestionId || {};
   choiceFileMap = mapJson || {};
+  QuizAudio.setVersion(quizJson.contentVersion || '');
   // 固定ファイル(番号・案内)を起動時にプリロード
   QuizAudio.preload(['num_ichi.wav', 'num_ni.wav', 'num_san.wav', 'end_erandene.wav']);
   buildSelectScreen();
@@ -876,6 +918,8 @@ Promise.all([
 });
 
 // ===== BOOT =====
+speechEnabled = loadSpeechEnabled();
+updateSpeechUI();
 state = GameState.load();
 // データ形式が変わった場合は履歴だけクリアして続行
 if (state.dataVersion !== DATA_VERSION) {
@@ -893,6 +937,7 @@ UICommon.init({
     UICommon.showScreen('select');
   },
   onSpeakGame: () => {
+    if (!speechEnabled) return;
     const q = currentRound[currentIndex];
     if (!q) return;
     QuizAudio.stop();
@@ -938,6 +983,15 @@ document.querySelectorAll('.age-btn').forEach(btn => {
 document.getElementById('btn-start-game').addEventListener('click', () => {
   AudioEngine.playClick();
   startGame();
+});
+
+// ===== SPEECH TOGGLE =====
+
+document.getElementById('toggle-speech').addEventListener('click', () => {
+  speechEnabled = !speechEnabled;
+  saveSpeechEnabled(speechEnabled);
+  if (!speechEnabled) QuizAudio.stop();
+  updateSpeechUI();
 });
 
 // ===== HISTORY MODAL イベント =====
