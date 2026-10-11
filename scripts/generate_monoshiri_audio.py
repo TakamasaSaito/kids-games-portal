@@ -330,7 +330,15 @@ def main():
     parser = argparse.ArgumentParser(description='ものしりクイズ VOICEVOX 音声生成')
     parser.add_argument('--test', action='store_true',
                         help='テスト生成: 聞き比べ用サンプルを audio/test/ に出力')
+    parser.add_argument('--only', type=str, default='',
+                        help='カンマ区切りの問題ID (例: --only Q012,Q020) — 指定した問題のみ再生成')
+    parser.add_argument('--force', action='store_true',
+                        help='--only で指定した問題のファイルを強制上書き (既存ファイルを再生成する)')
     args = parser.parse_args()
+
+    if args.force and not args.only:
+        print('ERROR: --force は --only と一緒に使ってください。', file=sys.stderr)
+        sys.exit(1)
 
     base = find_host()
     if not base:
@@ -347,6 +355,9 @@ def main():
 
     if args.test:
         _run_test(base, speaker_id, questions, age_map)
+    elif args.only:
+        only_ids = set(q.strip().upper() for q in args.only.split(',') if q.strip())
+        _run_partial(base, speaker_id, questions, only_ids, args.force)
     else:
         _run_full(base, speaker_id, questions)
 
@@ -413,6 +424,70 @@ def _run_test(base, speaker_id, questions, age_map):
         print(f'  {fname}.wav  "{normalize_text(text)}"')
     for fname, text, *_ in choice_items:
         print(f'  {fname}.wav  "{text}"')
+
+
+def _run_partial(base, speaker_id, questions, only_ids, force):
+    # type: (str, int, list, set, bool) -> None
+    """--only で指定した問題IDの音声のみ再生成し、不要になった選択肢 wav を削除する。"""
+    q_by_id = {q['id']: q for q in questions}
+    missing = only_ids - set(q_by_id.keys())
+    if missing:
+        print(f'ERROR: 以下の問題IDが見つかりません: {sorted(missing)}', file=sys.stderr)
+        sys.exit(1)
+
+    target_qs = [q_by_id[qid] for qid in sorted(only_ids)]
+    print(f'=== 部分再生成: {sorted(only_ids)} (force={force}) ===\n')
+
+    # 問題文 wav を再生成
+    print('--- 問題文 ---')
+    q_items = [
+        (f'q_{q["id"].lower()}', q['spokenPrompt'], SPEED_QUESTION, PITCH, INTON)
+        for q in target_qs
+    ]
+    errs = run_batch(base, speaker_id, q_items, AUDIO_DIR, '問題文', skip_existing=not force)
+
+    # 選択肢 wav を再生成 (対象問題のラベルのみ)
+    new_map = build_choice_filename_map(questions)
+    target_labels = set()
+    for q in target_qs:
+        for c in q['choices']:
+            target_labels.add(c['spokenLabel'])
+
+    print('\n--- 選択肢 ---')
+    c_items = [
+        (new_map[lbl], lbl, SPEED_CHOICE, PITCH, INTON)
+        for lbl in sorted(target_labels)
+        if lbl in new_map
+    ]
+    errs += run_batch(base, speaker_id, c_items, AUDIO_DIR, '選択肢', skip_existing=not force)
+
+    # 使われなくなった選択肢 wav を削除
+    existing_c = set(
+        fn for fn in os.listdir(AUDIO_DIR)
+        if fn.startswith('c_') and fn.endswith('.wav')
+    )
+    needed_c = set(fn + '.wav' for fn in new_map.values())
+    to_delete = existing_c - needed_c
+    if to_delete:
+        print('\n--- 不要な選択肢 wav を削除 ---')
+        for fname in sorted(to_delete):
+            os.remove(os.path.join(AUDIO_DIR, fname))
+            print(f'  削除: {fname}')
+    else:
+        print('\n不要な選択肢 wav はありませんでした')
+
+    # choice_filename_map.json を更新
+    map_path = os.path.join(AUDIO_DIR, 'choice_filename_map.json')
+    with open(map_path, 'w', encoding='utf-8') as f:
+        json.dump(new_map, f, ensure_ascii=False, indent=2)
+    print(f'\nマッピング更新: {map_path}')
+
+    total = len(q_items) + len(c_items)
+    failed = len(errs)
+    print(f'\n完了: {total - failed}/{total} ファイル')
+    if errs:
+        print(f'失敗: {errs}', file=sys.stderr)
+        sys.exit(1)
 
 
 def _run_full(base, speaker_id, questions):
