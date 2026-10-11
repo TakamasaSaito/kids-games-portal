@@ -122,11 +122,16 @@ shared/ のファイルを変更したら、全ゲームの `index.html` で
 - バージョンは `v=1` から始まり、shared/ の変更ごとに +1 する
 - 変更していない shared ファイルも番号を揃える（揃えないとゲームによって版が混在する）
 - shared/ を変更したら全ゲームでスタート→ゲーム→クリアを確認してからコミットする
+- 現在 `?v=1`（5-0 以降、shared/ は未変更）
 
 ## アイコン
 
 - ポータルのアイコン正本は `icons/source/portal_icon.svg`
-- PNG の再生成には `cairosvg` を使う（`--output-width` / `--output-height` オプションで出力サイズを指定する）
+- PNG の再生成コマンド（`-W`/`-H` は使わない）:
+  ```
+  cairosvg icons/source/portal_icon.svg -o icons/icon-512.png --output-width 512 --output-height 512
+  cairosvg icons/source/portal_icon.svg -o icons/icon-180.png --output-width 180 --output-height 180
+  ```
 - `scripts/generate_icon.py` は古い仕様（グラデのベタ塗り）のため、アイコン再生成には使わない
 
 ## 運用
