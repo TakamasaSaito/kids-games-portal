@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="512" height="512" rx="100" ry="100" fill="url(#bg)"/>
+
+  <!-- 白い円(顔の土台) -->
+  <circle cx="256" cy="240" r="168" fill="white" opacity="0.95"/>
+
+  <!-- 耳(三角) 左 -->
+  <polygon points="100,150 156,60 192,168" fill="white" opacity="0.95"/>
+  <!-- 耳内側(三角) 左 -->
+  <polygon points="117,145 156,78 183,158" fill="#f97316"/>
+
+  <!-- 耳(三角) 右 -->
+  <polygon points="412,150 356,60 320,168" fill="white" opacity="0.95"/>
+  <!-- 耳内側(三角) 右 -->
+  <polygon points="395,145 356,78 329,158" fill="#f97316"/>
+
+  <!-- 目 左 -->
+  <ellipse cx="200" cy="216" rx="20" ry="24" fill="#3b0764"/>
+  <!-- 目のハイライト 左 -->
+  <ellipse cx="207" cy="209" rx="7" ry="7" fill="white"/>
+
+  <!-- 目 右 -->
+  <ellipse cx="312" cy="216" rx="20" ry="24" fill="#3b0764"/>
+  <!-- 目のハイライト 右 -->
+  <ellipse cx="319" cy="209" rx="7" ry="7" fill="white"/>
+
+  <!-- 鼻(小さい楕円) -->
+  <ellipse cx="256" cy="268" rx="14" ry="10" fill="#f97316"/>
+
+  <!-- 口(アーチ) -->
+  <path d="M210,298 Q256,342 302,298" stroke="#3b0764" stroke-width="10" fill="none" stroke-linecap="round"/>
+
+  <!-- ほっぺ 左 -->
+  <ellipse cx="182" cy="278" rx="26" ry="16" fill="#f97316" opacity="0.4"/>
+  <!-- ほっぺ 右 -->
+  <ellipse cx="330" cy="278" rx="26" ry="16" fill="#f97316" opacity="0.4"/>
+
+  <!-- しっぽ(右下) -->
+  <path d="M360,360 Q430,330 420,420 Q360,400 360,360" fill="white" opacity="0.85"/>
+
+  <!-- 胴体(下半分、白い半楕円) -->
+  <ellipse cx="256" cy="420" rx="130" ry="60" fill="white" opacity="0.85"/>
+</svg>
