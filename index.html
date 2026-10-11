@@ -11,12 +11,14 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* 案D: A+B+C ミックス */
 :root {
-  --bg-start: #667eea;
-  --bg-end:   #764ba2;
-  --accent:   #FECA57;
-  --white:    #fff;
-  --text-dark: #2d3436;
+  --bg-start:    #667eea;
+  --bg-end:      #764ba2;
+  --accent:      #FECA57;
+  --game-accent: var(--accent);
+  --white:       #fff;
+  --text-dark:   #2d3436;
 }
 
 html, body {
@@ -37,6 +39,21 @@ body {
   min-height: -webkit-fill-available;
 }
 
+/* 案A: CSS 星かざり */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px),
+    radial-gradient(circle, rgba(255,255,255,0.20) 1.5px, transparent 1.5px),
+    radial-gradient(circle, rgba(255,255,255,0.12) 2px, transparent 2px);
+  background-size: 46px 46px, 73px 73px, 109px 109px;
+  background-position: 0 0, 23px 37px, 55px 18px;
+  z-index: 0;
+}
+
 /* ===== SCREENS ===== */
 .screen {
   display: none;
@@ -46,6 +63,7 @@ body {
   min-height: -webkit-fill-available;
   position: absolute;
   inset: 0;
+  z-index: 1; /* 星より前面 */
 }
 .screen.active { display: flex; }
 
@@ -72,6 +90,7 @@ body {
   font-size: clamp(56px, 16vmin, 96px);
   animation: float 3s ease-in-out infinite;
   display: block;
+  filter: drop-shadow(0 6px 10px rgba(60,30,120,0.28)); /* 案A */
 }
 
 @keyframes float {
@@ -107,7 +126,7 @@ body {
   .game-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* ===== GAME CARD ===== */
+/* 案D ===== GAME CARD (3D 底面影 + 4px 沈む) ===== */
 .game-card {
   touch-action: manipulation;
   background: var(--white);
@@ -121,15 +140,15 @@ body {
   padding: clamp(14px, 3.5vmin, 22px) 8px;
   min-height: 88px;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.1);
-  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.22), 0 6px 20px rgba(0,0,0,0.16);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
   -webkit-tap-highlight-color: transparent;
   text-align: center;
   width: 100%;
 }
 .game-card:active:not([disabled]) {
-  transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transform: translateY(4px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.22), 0 3px 8px rgba(0,0,0,0.14);
 }
 .game-card.coming-soon {
   background: rgba(255,255,255,0.2);
@@ -219,7 +238,9 @@ body {
 
 /* reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  body::before { display: none; }
   .portal-mascot { animation: none !important; }
+  .game-card:active:not([disabled]) { transform: none !important; }
 }
 </style>
 </head>

@@ -46,12 +46,12 @@ shared/
 ### shared/ 読み込みの書き方
 
 ```html
-<link rel="stylesheet" href="../../shared/game-shell.css?v=1">
-<script src="../../shared/audio-engine.js?v=1"></script>
-<script src="../../shared/audio-player.js?v=1"></script>
-<script src="../../shared/speech.js?v=1"></script>
-<script src="../../shared/game-state.js?v=1"></script>
-<script src="../../shared/ui-common.js?v=1"></script>
+<link rel="stylesheet" href="../../shared/game-shell.css?v=2">
+<script src="../../shared/audio-engine.js?v=2"></script>
+<script src="../../shared/audio-player.js?v=2"></script>
+<script src="../../shared/speech.js?v=2"></script>
+<script src="../../shared/game-state.js?v=2"></script>
+<script src="../../shared/ui-common.js?v=2"></script>
 ```
 
 ## 音声アンロック (R1)
@@ -83,6 +83,9 @@ null でも例外を出さない（`if (statsEl && _cfg.renderStats)` でガー�
 | `.character-game` font-size | `clamp(28px, 7vmin, 52px)` |
 | `.modal-box` | `width:min(340px,92vw); max-height:90vh; overflow-y:auto` |
 | confetti タイムアウト | 4500ms |
+| ボタン底面影(3D) | `box-shadow: 0 4px 0 rgba(0,0,0,0.28)` + `:active { translateY(4px) }` / `transition: 0.08s ease-out` |
+| 背景の星かざり | `body::before` radial-gradient 3段 (0.35/0.20/0.12 不透明度)、`pointer-events:none`、`z-index:0` |
+| ゲームアクセント色 | `--game-accent` (CSS変数)。各ゲームの `<head>` に `:root { --game-accent: #色; }` 1行で上書き |
 
 ## 🏠ボタンの動作
 
@@ -122,7 +125,7 @@ shared/ のファイルを変更したら、全ゲームの `index.html` で
 - バージョンは `v=1` から始まり、shared/ の変更ごとに +1 する
 - 変更していない shared ファイルも番号を揃える（揃えないとゲームによって版が混在する）
 - shared/ を変更したら全ゲームでスタート→ゲーム→クリアを確認してからコミットする
-- 現在 `?v=1`（5-0 以降、shared/ は未変更）
+- 現在 `?v=2`（デザイン刷新(案D)で game-shell.css を変更）
 
 ## アイコン
 

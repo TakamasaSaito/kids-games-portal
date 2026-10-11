@@ -1,8 +1,6 @@
 /* =====================================================
    game-shell.css  —  kids-games-portal 共通スタイル
-   ステップ5-0 (2026-10-10) で抽出
-   ゲーム固有CSS (ゲーム画面レイアウト・統計グリッド等) は
-   各 games/<id>/index.html のインライン <style> に残す
+   [案D] A+B+C ミックス
    ===================================================== */
 
 /* ===== CSS RESET ===== */
@@ -10,11 +8,12 @@
 
 /* ===== CSS VARIABLES ===== */
 :root {
-  --bg-start:  #667eea;
-  --bg-end:    #764ba2;
-  --accent:    #FECA57;
-  --white:     #fff;
-  --text-dark: #2d3436;
+  --bg-start:    #667eea;   /* 元の色をそのまま維持 */
+  --bg-end:      #764ba2;
+  --accent:      #FECA57;
+  --game-accent: var(--accent);  /* 案C: 各ゲームで1行上書き可能 */
+  --white:       #fff;
+  --text-dark:   #2d3436;
 }
 
 /* ===== BASE ===== */
@@ -36,6 +35,21 @@ body {
   min-height: -webkit-fill-available;
 }
 
+/* 案A: CSS 星かざり — pointer-events:none でタップを妨げない */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px),
+    radial-gradient(circle, rgba(255,255,255,0.20) 1.5px, transparent 1.5px),
+    radial-gradient(circle, rgba(255,255,255,0.12) 2px, transparent 2px);
+  background-size: 46px 46px, 73px 73px, 109px 109px;
+  background-position: 0 0, 23px 37px, 55px 18px;
+  z-index: 0;
+}
+
 /* ===== SCREEN SYSTEM ===== */
 .screen {
   display: none;
@@ -49,6 +63,7 @@ body {
   padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 16px);
   position: absolute;
   inset: 0;
+  z-index: 1; /* 星かざりより前面 */
 }
 .screen.active { display: flex; }
 
@@ -62,18 +77,21 @@ body {
   text-shadow: 0 4px 16px rgba(0,0,0,0.3);
   text-align: center;
   line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .app-subtitle {
   font-size: clamp(16px, 4vmin, 28px);
   color: rgba(255,255,255,0.85);
   text-align: center;
+  letter-spacing: 0.02em;
 }
 
 .character-idle {
   font-size: clamp(60px, 18vmin, 120px);
   animation: float 3s ease-in-out infinite;
   display: block;
+  filter: drop-shadow(0 6px 10px rgba(60,30,120,0.28)); /* 案A: 紫寄り浮き感 */
 }
 
 @keyframes float {
@@ -82,9 +100,10 @@ body {
 }
 
 /* ===== BUTTONS ===== */
+/* 案B: 底面影で厚みを出し、押すと4px沈む */
 .btn-primary {
   touch-action: manipulation;
-  background: var(--accent);
+  background: var(--game-accent);
   color: var(--text-dark);
   border: none;
   border-radius: 50px;
@@ -92,11 +111,14 @@ body {
   font-weight: 900;
   padding: 0.6em 2em;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);
-  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.28), 0 6px 20px rgba(0,0,0,0.2);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
   -webkit-tap-highlight-color: transparent;
 }
-.btn-primary:active { transform: scale(0.95); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.btn-primary:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.28), 0 3px 8px rgba(0,0,0,0.15);
+}
 
 .btn-secondary {
   touch-action: manipulation;
@@ -108,13 +130,17 @@ body {
   font-weight: 700;
   padding: 0.5em 1.5em;
   cursor: pointer;
-  transition: transform 0.1s, background 0.1s;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, background 0.08s;
   -webkit-tap-highlight-color: transparent;
 }
-.btn-secondary:active { transform: scale(0.95); background: rgba(255,255,255,0.35); }
+.btn-secondary:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.35);
+}
 
-/* ===== GEAR BUTTON (⚙ 長押し親メニュー) ===== */
-/* R6統一: compare-game の値をそのまま採用 */
+/* ===== GEAR BUTTON ===== */
 .gear-btn {
   touch-action: none;
   -webkit-touch-callout: none;
@@ -149,7 +175,7 @@ body {
 .gear-btn.holding .gear-ring { opacity: 1; }
 .gear-ring-fill {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--game-accent);
   stroke-width: 3.5;
   stroke-linecap: round;
   stroke-dasharray: 169.6;
@@ -161,8 +187,7 @@ body {
   transition: stroke-dashoffset 3s linear;
 }
 
-/* ===== HOME BUTTON (🏠) ===== */
-/* R6統一: タップ領域は大きい方 → 44px × 44px / icon 20px */
+/* ===== HOME BUTTON ===== */
 .home-btn {
   touch-action: manipulation;
   position: absolute;
@@ -180,11 +205,16 @@ body {
   justify-content: center;
   -webkit-tap-highlight-color: transparent;
   z-index: 10;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.18); /* 案B */
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, background 0.08s;
 }
-.home-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.9); }
+.home-btn:active {
+  background: rgba(255,255,255,0.35);
+  transform: translateY(4px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.18);
+}
 
-/* ===== SPEAK BUTTON (🔊) ===== */
-/* R6統一: タップ領域は大きい方 → max-size 64px */
+/* ===== SPEAK BUTTON ===== */
 .speak-btn {
   touch-action: manipulation;
   background: rgba(255,255,255,0.25);
@@ -199,11 +229,15 @@ body {
   justify-content: center;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.18); /* 案B */
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
 }
-.speak-btn:active { transform: scale(0.9); }
+.speak-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.18);
+}
 
 /* ===== CHARACTER (ゲーム中) ===== */
-/* R6統一: compare-game の値 */
 .character-game {
   font-size: clamp(28px, 7vmin, 52px);
   transition: transform 0.2s;
@@ -243,27 +277,33 @@ body {
   border-radius: 50%;
   background: rgba(255,255,255,0.3);
   border: 2px solid rgba(255,255,255,0.5);
-  transition: background 0.2s, transform 0.2s;
+  transition: background 0.2s, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
 }
+/* 案C: --game-accent を使う */
 .progress-dot.filled {
-  background: var(--accent);
-  border-color: #f39c12;
-  transform: scale(1.1);
+  background: var(--game-accent);
+  border-color: rgba(0,0,0,0.25);
+  transform: scale(1.2);
 }
 
 /* ===== CLEAR SCREEN ===== */
 #screen-clear { gap: 3vmin; position: relative; overflow: hidden; }
 
+/* 案D: クリアタイトルに --game-accent + きらめきアニメ(text-shadowのみ) */
 .clear-title {
   font-size: clamp(36px, 12vmin, 80px);
   font-weight: 900;
-  color: var(--accent);
+  color: var(--game-accent);
   text-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  animation: pop-in 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  animation: pop-in 0.5s cubic-bezier(0.34,1.56,0.64,1), glow 2.5s ease-in-out 1s infinite;
 }
 @keyframes pop-in {
   from { transform: scale(0.3); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
+}
+@keyframes glow {
+  0%, 100% { text-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  50%       { text-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 18px var(--game-accent), 0 0 36px var(--game-accent); }
 }
 
 .clear-character {
@@ -336,7 +376,6 @@ body {
 }
 .modal-overlay.active { display: flex; }
 
-/* R6統一: max-height:90vh; overflow-y:auto を共通に含める */
 .modal-box {
   background: var(--white);
   border-radius: 24px;
@@ -375,10 +414,11 @@ body {
   font-weight: 700;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1);
 }
 .btn-modal.danger  { background: #e17055; color: var(--white); }
 .btn-modal.cancel  { background: #dfe6e9; color: var(--text-dark); }
-.btn-modal:active  { transform: scale(0.95); }
+.btn-modal:active  { transform: scale(0.94); }
 
 .volume-toggle {
   display: flex;
@@ -401,7 +441,8 @@ body {
   border: none;
   flex-shrink: 0;
 }
-.toggle-switch.on { background: #54A0FF; }
+/* 案C: トグルのオン色も --game-accent に */
+.toggle-switch.on { background: var(--game-accent); }
 .toggle-switch::after {
   content: '';
   position: absolute;
@@ -423,7 +464,7 @@ body {
   line-height: 1.4;
 }
 
-/* ===== PARENT STATS (共通行) ===== */
+/* ===== PARENT STATS ===== */
 .parent-stats-area {
   width: 100%;
   display: flex;
@@ -448,6 +489,7 @@ body {
   font-size: clamp(90px, 24vmin, 160px);
   display: block;
   animation: splash-bounce 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  filter: drop-shadow(0 8px 12px rgba(60,30,120,0.25)); /* 案A: 紫寄り浮き感 */
 }
 .splash-title {
   font-size: clamp(32px, 10vmin, 72px);
@@ -469,9 +511,11 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ===== REDUCED MOTION (共通アニメのみ) ===== */
-/* ゲーム固有のアニメ (カード・タイル・絵文字 等) は各ゲームのCSSで宣言する */
+/* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
+  /* 案A: 星かざりを非表示 */
+  body::before { display: none; }
+
   .character-idle,
   .character-game.jump,
   .clear-title,
@@ -483,5 +527,13 @@ body {
   .gear-ring-fill {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* 案B: 沈む動きをゼロに (厚みの影は残す) */
+  .btn-primary:active,
+  .btn-secondary:active,
+  .home-btn:active,
+  .speak-btn:active {
+    transform: none !important;
   }
 }
