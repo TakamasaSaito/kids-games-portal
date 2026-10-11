@@ -163,6 +163,38 @@ shared/ のファイルを変更したら、全ゲームの `index.html` で
 4. スタート → ゲーム → クリア → 🏠 が通ったら `status` を `"live"` に変更してコミット
 5. shared/ を変更した場合は全ゲームの `?v=N` を同じ番号にインクリメントする
 
+## ものしりクイズ — 問題の直し方
+
+### ファイル構成
+
+| ファイル | 役割 |
+|---|---|
+| `games/monoshiri-quiz/data/quiz_questions_300.json` | 問題データ本体（prompt/spokenPrompt/choices/correctChoiceId） |
+| `games/monoshiri-quiz/data/monoshiri_age_map.json` | 問題IDごとの対象年齢（ageByQuestionId） |
+| `games/monoshiri-quiz/audio/choice_filename_map.json` | 選択肢テキスト → wav ファイル名のマッピング |
+| `docs/monoshiri-question-list.csv` | 300問一覧（Excel で確認用）|
+
+### 手順
+
+1. **問題データを直す** — `quiz_questions_300.json` の該当問題を編集する
+2. **音声を作り直す** — 変更した問題IDを指定して音声を再生成する
+   ```
+   # 例: Q012 と Q020 を作り直す
+   python3 scripts/generate_monoshiri_audio.py --only Q012,Q020 --force
+   ```
+   - 使われなくなった選択肢 wav は自動削除、`choice_filename_map.json` も自動更新
+3. **contentVersion を上げる** — `quiz_questions_300.json` の `"contentVersion"` を上げる（例: `"1.0.0"` → `"1.0.1"`）
+   - これにより音声ファイルの URL に `?v=` が付き直し、ブラウザキャッシュが更新される
+4. **一覧表を再生成** — `python3 scripts/generate_monoshiri_list.py`
+5. **確認** — ブラウザで問題文・選択肢・音声を確認する
+6. **commit** — `git add` して commit する
+
+### 依頼の例
+
+- 「ものしりクイズの Q012 の問題文を〇〇に変えて」
+- 「Q020 の選択肢2を△△に変えて、音声も作り直して」
+- 「Q050 の正解を選択肢3に変えて」（音声変更なし → 手順2は不要）
+
 ## プロジェクト管理方針
 
 本リポジトリは TakamasaSaito/portfolio-dashboard の MANAGEMENT.md に従う。
