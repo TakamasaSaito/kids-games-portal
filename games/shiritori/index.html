@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="しりとり">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-512.png">
+<title>しりとり</title>
+<link rel="stylesheet" href="../../shared/game-shell.css?v=2">
+<style>
+:root { --game-accent: #A29BFE; }
+:root {
+  --bg-start: #6C3483;
+  --bg-end:   #A29BFE;
+  --accent:   #F8BBD9;
+}
+
+/* ===== GAME SCREEN ===== */
+#screen-game {
+  justify-content: space-between;
+  padding-top:    max(54px, calc(env(safe-area-inset-top) + 48px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  gap: 2vmin;
+}
+
+/* お題エリア */
+.odai-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* お題の絵文字ボタン */
+.odai-btn {
+  touch-action: manipulation;
+  background: rgba(255,255,255,0.18);
+  border: none;
+  border-radius: 20px;
+  padding: 12px 24px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  font-size: clamp(72px, 22vmin, 120px);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.28);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+}
+.odai-btn:active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+/* 3択カードエリア */
+.choices {
+  display: flex;
+  gap: clamp(8px, 2.5vmin, 16px);
+  width: 100%;
+  max-width: 440px;
+  justify-content: center;
+  align-items: stretch;
+}
+
+/* 各選択肢カード */
+.choice-card {
+  touch-action: manipulation;
+  flex: 1;
+  aspect-ratio: 1;
+  max-width: 130px;
+  font-size: clamp(52px, 15vmin, 86px);
+  background: rgba(255,255,255,0.92);
+  border: 3px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.28);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out,
+              background 0.15s, border-color 0.15s;
+}
+.choice-card:not(.locked):active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+.choice-card.locked { cursor: default; }
+.choice-card.correct {
+  background: #d4edda;
+  border-color: #28a745;
+}
+.choice-card.wrong {
+  animation: shake 0.4s ease-out;
+}
+.choice-card.hint-pulse {
+  animation: pulse-hint 1.5s ease-in-out infinite;
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-9px); }
+  40% { transform: translateX(9px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+@keyframes pulse-hint {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.65; }
+}
+
+/* 非表示の UICommon 用スピークボタン */
+#btn-speak { display: none; }
+
+/* ロード失敗メッセージ */
+.load-error {
+  font-size: clamp(13px, 3.3vmin, 18px);
+  color: rgba(255,255,255,0.95);
+  text-align: center;
+  padding: 8px 16px;
+  background: rgba(220,53,69,0.35);
+  border-radius: 10px;
+  max-width: 320px;
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="screen-splash" class="screen active">
+  <span class="splash-fox" aria-hidden="true">🎯</span>
+  <div class="splash-title">しりとり</div>
+</div>
+
+<!-- START SCREEN -->
+<div id="screen-start" class="screen">
+  <span class="character-idle" id="char-start" aria-hidden="true">🎯</span>
+  <div class="app-title">しりとり</div>
+  <div class="app-subtitle">さいごのおとで つなげよう！</div>
+  <button class="btn-primary" id="btn-start" aria-label="はじめる" disabled>よみこみちゅう…</button>
+  <div class="load-error" id="load-error" hidden>よみこみに しっぱい しました。ページを よみなおしてください。</div>
+  <button class="gear-btn" id="btn-gear" aria-label="せってい">⚙
+    <svg class="gear-ring" viewBox="0 0 54 54" aria-hidden="true">
+      <circle class="gear-ring-fill" cx="27" cy="27" r="27"/>
+    </svg>
+  </button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <button class="home-btn" id="btn-home-game" aria-label="ホームにもどる">🏠</button>
+
+  <div class="progress-area">
+    <span class="progress-label" id="progress-label">0 / 10</span>
+    <div class="progress-dots" id="progress-dots"></div>
+  </div>
+
+  <!-- お題絵文字 (タップで再読み上げ) -->
+  <div class="odai-area">
+    <button class="odai-btn" id="odai-btn" aria-label="もういちどよむ">🎯</button>
+  </div>
+
+  <!-- 3択カード (JS で生成) -->
+  <div class="choices" id="choices" role="group" aria-label="こたえをえらぼう"></div>
+
+  <!-- UICommon の onSpeakGame フック用 (非表示) -->
+  <button id="btn-speak" aria-hidden="true" tabindex="-1">🔊</button>
+
+  <!-- UICommon.jumpCharacter() 用 (非表示) -->
+  <span class="character-game" id="char-game" aria-hidden="true" style="display:none">🎯</span>
+</div>
+
+<!-- CLEAR SCREEN -->
+<div id="screen-clear" class="screen">
+  <div class="clear-title">すごい！</div>
+  <div class="clear-character" aria-hidden="true">🎯✨</div>
+  <div class="clear-subtitle">10もん あそんだね！</div>
+  <div class="clear-buttons">
+    <button class="btn-primary" id="btn-next" style="width:100%">もういちど</button>
+    <button class="btn-secondary" id="btn-quit" style="width:100%">おわる</button>
+  </div>
+  <div class="confetti-container" id="confetti-container"></div>
+</div>
+
+<!-- PARENT MENU MODAL -->
+<div class="modal-overlay" id="modal-parent">
+  <div class="modal-box">
+    <div class="modal-title">⚙ せってい（おとなむけ）</div>
+    <div class="volume-toggle">
+      <span>おと</span>
+      <button class="toggle-switch on" id="toggle-volume" aria-label="音量切り替え"></button>
+      <span id="volume-label">オン</span>
+    </div>
+    <button class="btn-modal danger" id="btn-reset-confirm">しんちょくをリセット</button>
+    <button class="btn-modal cancel" id="btn-parent-close" style="width:100%">とじる</button>
+    <div class="modal-credit">音声: VOICEVOX / ずんだもん（あまあま）</div>
+  </div>
+</div>
+
+<!-- RESET CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal-box">
+    <div class="modal-title">リセットしますか？</div>
+    <div class="modal-body">ゲームのしんちょくが すべてきえます。</div>
+    <div class="modal-row">
+      <button class="btn-modal danger" id="btn-reset-do">リセット</button>
+      <button class="btn-modal cancel" id="btn-reset-cancel">もどる</button>
+    </div>
+  </div>
+</div>
+
+<!-- shared/ 読み込み順は decisions/001-shared-design.md のとおり -->
+<script src="../../shared/audio-engine.js?v=2"></script>
+<script src="../../shared/audio-player.js?v=2"></script>
+<script src="../../shared/speech.js?v=2"></script>
+<script src="../../shared/game-state.js?v=2"></script>
+<script src="../../shared/ui-common.js?v=2"></script>
+<script>
+'use strict';
+
+// ===== 定数 =====
+const STORAGE_KEY    = 'shiritori-v1';
+const ROUND_SIZE     = 10;
+const CORRECT_DELAY  = 2000;  // 正解後、次問題へ進むまでの待機 (ms)
+const SKIP_LEAD_S    = 0.60;  // 連続再生で2本目以降の先頭無音スキップ量 (秒)
+const GAP_MS         = 100;   // 連続再生のつなぎ目 (ms)
+const HINT_THRESHOLD = 2;     // 同問題で何回間違えたらヒントを出すか
+
+// お題の末尾音として使えない文字 (濁音・半濁音・ん・ー・小さい文字)
+const INVALID_LAST = new Set([
+  'が','ぎ','ぐ','げ','ご','ざ','じ','ず','ぜ','ぞ',
+  'だ','ぢ','づ','で','ど','ば','び','ぶ','べ','ぼ',
+  'ぱ','ぴ','ぷ','ぺ','ぽ','ん','ー',
+  'っ','ゃ','ゅ','ょ','ぁ','ぃ','ぅ','ぇ','ぉ',
+]);
+
+// ===== 連続音声再生 (R4: AudioPlayer/AudioEngine は再定義しない) =====
+// AudioEngine.isEnabled() で音声ON/OFFを一元管理する
+const ShiritoriAudio = (() => {
+  const pool = new Map();
+  let chainId = 0;
+
+  function preload(files) {
+    files.forEach(f => {
+      if (!f || pool.has(f)) return;
+      const a = new Audio(f);
+      a.preload = 'auto';
+      pool.set(f, a);
+    });
+  }
+
+  // items: [{file, tts}]  1本目はそのまま、2本目以降は先頭無音を SKIP_LEAD_S スキップ
+  function playSequence(items, gapMs) {
+    if (!AudioEngine.isEnabled()) return;
+    gapMs = (gapMs !== undefined) ? gapMs : GAP_MS;
+    const id = ++chainId;
+    let i = 0;
+    let isFirst = true;
+
+    function next() {
+      if (id !== chainId || i >= items.length) return;
+      const item = items[i++];
+      const first = isFirst;
+      isFirst = false;
+      const a = item.file ? pool.get(item.file) : null;
+
+      if (!a) {
+        _tts(item.tts, () => { if (id === chainId) setTimeout(next, gapMs); });
+        return;
+      }
+
+      a.currentTime = first ? 0 : SKIP_LEAD_S;
+
+      function cleanup() {
+        a.removeEventListener('ended', onEnded);
+        a.removeEventListener('error', onErr);
+      }
+      function onEnded() {
+        cleanup();
+        if (id !== chainId) return;
+        setTimeout(next, gapMs);
+      }
+      function onErr() {
+        cleanup();
+        if (id !== chainId) return;
+        _tts(item.tts, () => { if (id === chainId) setTimeout(next, gapMs); });
+      }
+
+      a.addEventListener('ended', onEnded);
+      a.addEventListener('error', onErr);
+
+      const p = a.play();
+      if (p) {
+        p.catch(err => {
+          cleanup();
+          if (!err || err.name === 'AbortError') return;
+          if (id !== chainId) return;
+          _tts(item.tts, () => { if (id === chainId) setTimeout(next, gapMs); });
+        });
+      }
+    }
+
+    next();
+  }
+
+  function _tts(text, cb) {
+    if (!text || !('speechSynthesis' in window)) { cb && cb(); return; }
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ja-JP';
+      u.rate = 0.9;
+      const safety = setTimeout(() => { cb && cb(); cb = null; },
+                                Math.max(2000, text.length * 180 + 1500));
+      u.onend = () => { clearTimeout(safety); cb && cb(); cb = null; };
+      speechSynthesis.speak(u);
+    } catch (e) { cb && cb(); }
+  }
+
+  function stop() {
+    chainId++;
+    pool.forEach(a => { if (!a.paused) { a.pause(); a.currentTime = 0; } });
+    try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {}
+  }
+
+  return { preload, playSequence, stop };
+})();
+
+// ===== ゲーム状態 =====
+const GameState = createGameState(STORAGE_KEY, () => ({ totalCorrect: 0 }));
+let state = null;
+
+// ===== 単語データ =====
+let allWords          = [];
+let questionCandidates = [];
+
+// お題になれる単語を抽出する
+// 条件: lastSound が無効文字セット外 かつ lastSound で始まる別の語が2語以上
+function buildQuestionCandidates(words) {
+  return words.filter(w => {
+    if (INVALID_LAST.has(w.lastSound)) return false;
+    const count = words.filter(other =>
+      other.id !== w.id && other.firstSound === w.lastSound
+    ).length;
+    return count >= 2;
+  });
+}
+
+// ===== ユーティリティ =====
+function shuffle(arr) {
+  arr = arr.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ===== ラウンド構築 =====
+// 各問題: { odai, choices: [{word, isCorrect}] }
+// 同セット内で同じ語が正解に2回出ないようにする (出せない場合のみ許容)
+function buildRound() {
+  const odais = shuffle(questionCandidates).slice(0, ROUND_SIZE);
+  const usedCorrectIds = new Set();
+
+  return odais.map(odai => {
+    // 正解候補: odai の lastSound で始まる語、odai 自身を除く、使用済みを除く
+    let correctPool = allWords.filter(w =>
+      w.id !== odai.id &&
+      w.firstSound === odai.lastSound &&
+      !usedCorrectIds.has(w.id)
+    );
+    if (correctPool.length === 0) {
+      // フォールバック: 使用済みを許容
+      correctPool = allWords.filter(w =>
+        w.id !== odai.id && w.firstSound === odai.lastSound
+      );
+    }
+    const correct = correctPool[Math.floor(Math.random() * correctPool.length)];
+    usedCorrectIds.add(correct.id);
+
+    // ダミー: odai の lastSound で始まらない語、odai 自身を除く
+    const dummies = shuffle(
+      allWords.filter(w => w.id !== odai.id && w.firstSound !== odai.lastSound)
+    ).slice(0, 2);
+
+    return {
+      odai,
+      choices: shuffle([
+        { word: correct,    isCorrect: true  },
+        { word: dummies[0], isCorrect: false },
+        { word: dummies[1], isCorrect: false },
+      ]),
+    };
+  });
+}
+
+// ===== ゲーム進行 =====
+let round        = [];
+let currentIdx   = 0;
+let answerLocked = false;
+let wrongCount   = 0;
+let correctTimer = null;
+
+function startGame() {
+  ShiritoriAudio.stop();
+  if (correctTimer) { clearTimeout(correctTimer); correctTimer = null; }
+  round      = buildRound();
+  currentIdx = 0;
+  UICommon.showScreen('game');
+  UICommon.renderProgress(0, ROUND_SIZE);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  ShiritoriAudio.stop();
+  if (correctTimer) { clearTimeout(correctTimer); correctTimer = null; }
+
+  const q    = round[currentIdx];
+  answerLocked = false;
+  wrongCount   = 0;
+
+  // お題絵文字を更新
+  const odaiBtn = document.getElementById('odai-btn');
+  odaiBtn.textContent = q.odai.emoji;
+  odaiBtn.setAttribute('aria-label', q.odai.word + ' もういちどよむ');
+
+  // 選択肢カードを構築
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  q.choices.forEach(ch => {
+    const card = document.createElement('button');
+    card.className = 'choice-card';
+    card.setAttribute('aria-label', ch.word.word);
+    card.dataset.id      = ch.word.id;
+    card.dataset.correct = String(ch.isCorrect);
+    card.textContent     = ch.word.emoji;
+    card.addEventListener('click', () => handleAnswer(ch));
+    choicesEl.appendChild(card);
+  });
+
+  UICommon.renderProgress(currentIdx, ROUND_SIZE);
+
+  // 現問題と次問題の音声をプリロード
+  preloadQuestion(q);
+  if (round[currentIdx + 1]) preloadQuestion(round[currentIdx + 1]);
+
+  // 問題音声を再生
+  playQuestion(q);
+}
+
+function preloadQuestion(q) {
+  const files = ['audio/questions/' + q.odai.id + '.wav'];
+  q.choices.forEach(ch => files.push('audio/words/' + ch.word.id + '.wav'));
+  ShiritoriAudio.preload(files);
+}
+
+function playQuestion(q) {
+  ShiritoriAudio.playSequence([
+    { file: 'audio/questions/' + q.odai.id + '.wav', tts: q.odai.word },
+  ]);
+}
+
+// ===== 回答処理 =====
+function handleAnswer(ch) {
+  if (answerLocked) return;
+  ShiritoriAudio.stop();
+
+  const cards = document.querySelectorAll('#choices .choice-card');
+
+  if (ch.isCorrect) {
+    answerLocked = true;
+    cards.forEach(card => {
+      card.classList.add('locked');
+      if (card.dataset.id === ch.word.id) card.classList.add('correct');
+    });
+
+    state.totalCorrect++;
+    GameState.save(state);
+
+    AudioEngine.playCorrect();
+    UICommon.spawnStars(document.querySelector('#choices .choice-card.correct'));
+    UICommon.jumpCharacter();
+
+    const praiseIdx = Math.floor(Math.random() * 3) + 1;
+    ShiritoriAudio.playSequence([
+      { file: 'audio/words/' + ch.word.id + '.wav',          tts: ch.word.word },
+      { file: 'audio/se/praise_' + praiseIdx + '.wav',        tts: '' },
+    ]);
+
+    correctTimer = setTimeout(() => {
+      correctTimer = null;
+      advanceQuestion();
+    }, CORRECT_DELAY);
+
+  } else {
+    // 不正解: SE + shake のみ。声なし。
+    wrongCount++;
+    const card = [...cards].find(c => c.dataset.id === ch.word.id);
+    if (card) {
+      card.classList.add('wrong');
+      setTimeout(() => card.classList.remove('wrong'), 450);
+    }
+    AudioEngine.playWrong();
+
+    if (wrongCount >= HINT_THRESHOLD) showHint();
+  }
+}
+
+// ヒント: 正解カードを点滅、問題音声を再生
+function showHint() {
+  const q = round[currentIdx];
+  const correctChoice = q.choices.find(c => c.isCorrect);
+  document.querySelectorAll('#choices .choice-card').forEach(card => {
+    if (card.dataset.id === correctChoice.word.id) {
+      card.classList.add('hint-pulse');
+    }
+  });
+  playQuestion(q);
+}
+
+// ===== 次問題へ進む =====
+function advanceQuestion() {
+  currentIdx++;
+  UICommon.renderProgress(currentIdx, ROUND_SIZE);
+
+  if (currentIdx >= ROUND_SIZE) {
+    ShiritoriAudio.stop();
+    setTimeout(() => {
+      AudioEngine.playClear();
+      ShiritoriAudio.playSequence([
+        { file: 'audio/se/clear.wav', tts: 'ぜんぶできたね！' },
+      ]);
+      UICommon.spawnConfetti();
+      UICommon.showScreen('clear');
+    }, 600);
+  } else {
+    renderQuestion();
+  }
+}
+
+// ===== データ読み込み =====
+fetch('data/words.json')
+  .then(r => r.json())
+  .then(data => {
+    allWords           = data.words;
+    questionCandidates = buildQuestionCandidates(allWords);
+    ShiritoriAudio.preload([
+      'audio/se/praise_1.wav',
+      'audio/se/praise_2.wav',
+      'audio/se/praise_3.wav',
+      'audio/se/clear.wav',
+    ]);
+    const btn = document.getElementById('btn-start');
+    btn.disabled    = false;
+    btn.textContent = 'はじめる';
+  })
+  .catch(() => {
+    document.getElementById('load-error').hidden = false;
+  });
+
+// ===== BOOT =====
+state = GameState.load();
+
+UICommon.init({
+  // R1: UICommon が btn-start タップ時に AudioEngine.resume / AudioPlayer.unlock /
+  //     Speech.init を同期的に先頭で呼ぶ
+  onStart: () => { startGame(); },
+  onSpeakGame: () => {
+    if (!AudioEngine.isEnabled()) return;
+    ShiritoriAudio.stop();
+    playQuestion(round[currentIdx]);
+  },
+  onNextClear: () => { startGame(); },
+  onReset: () => {
+    state = GameState.reset();
+  },
+  // R5: renderStats を渡さない (#parent-stats は HTML に不在)
+});
+
+// ===== お題ボタン (タップで再読み上げ) =====
+document.getElementById('odai-btn').addEventListener('click', () => {
+  AudioEngine.playClick();
+  if (!AudioEngine.isEnabled()) return;
+  ShiritoriAudio.stop();
+  playQuestion(round[currentIdx]);
+});
+
+// ===== ゲーム画面から離脱するときにタイマー・音声をキャンセル =====
+document.getElementById('btn-home-game').addEventListener('click', () => {
+  ShiritoriAudio.stop();
+  if (correctTimer) { clearTimeout(correctTimer); correctTimer = null; }
+});
+
+document.getElementById('btn-quit').addEventListener('click', () => {
+  ShiritoriAudio.stop();
+});
+
+document.getElementById('btn-reset-do').addEventListener('click', () => {
+  ShiritoriAudio.stop();
+  if (correctTimer) { clearTimeout(correctTimer); correctTimer = null; }
+});
+</script>
+</body>
+</html>
