@@ -19,10 +19,24 @@
 
 /* ===== GAME SCREEN ===== */
 #screen-game {
-  justify-content: space-between;
+  justify-content: flex-start;
   padding-top:    max(54px, calc(env(safe-area-inset-top) + 48px));
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-bottom: max(72px, calc(env(safe-area-inset-bottom) + 68px));
+  padding-left:   max(16px, env(safe-area-inset-left));
+  padding-right:  max(16px, env(safe-area-inset-right));
   gap: 2vmin;
+}
+
+/* お題エリアと選択肢のラッパー */
+.game-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  gap: clamp(12px, 3vmin, 20px);
 }
 
 /* お題エリア */
@@ -39,20 +53,26 @@
   background: rgba(255,255,255,0.18);
   border: none;
   border-radius: 20px;
-  padding: 12px 24px;
+  padding: 10px 28px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  font-size: clamp(72px, 22vmin, 120px);
-  line-height: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   box-shadow: 0 4px 0 rgba(0,0,0,0.28);
   transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
 }
 .odai-btn:active {
   transform: translateY(4px);
   box-shadow: none;
+}
+
+.odai-emoji {
+  font-size: clamp(56px, 16vmin, 88px);
+  line-height: 1;
+  display: block;
 }
 
 /* 3択カードエリア */
@@ -69,17 +89,18 @@
 .choice-card {
   touch-action: manipulation;
   flex: 1;
-  aspect-ratio: 1;
   max-width: 130px;
-  font-size: clamp(52px, 15vmin, 86px);
   background: rgba(255,255,255,0.92);
   border: 3px solid transparent;
   border-radius: 16px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
   line-height: 1;
   box-shadow: 0 4px 0 rgba(0,0,0,0.28);
   transition: transform 0.08s ease-out, box-shadow 0.08s ease-out,
@@ -112,6 +133,45 @@
 @keyframes pulse-hint {
   0%,100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.1); opacity: 0.65; }
+}
+
+.choice-emoji {
+  font-size: clamp(36px, 10vmin, 60px);
+  line-height: 1;
+  display: block;
+}
+
+/* 単語の文字表示 */
+.word-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+/* 通常文字（お題カード: 暗背景） */
+.w-char {
+  font-size: clamp(11px, 3vmin, 16px);
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.3;
+}
+
+/* アクセント文字（お題の末尾・選択肢の先頭: 共通色） */
+.w-char.accent {
+  font-size: clamp(18px, 5vmin, 26px);
+  font-weight: 900;
+  color: #E8A000;
+}
+
+/* 選択肢カード上の通常文字（白背景） */
+.choice-card .w-char {
+  color: rgba(0,0,0,0.50);
+}
+
+/* 選択肢カード上のアクセント文字（お題と同じ色を維持） */
+.choice-card .w-char.accent {
+  color: #E8A000;
 }
 
 /* 非表示の UICommon 用スピークボタン */
@@ -160,13 +220,16 @@
     <div class="progress-dots" id="progress-dots"></div>
   </div>
 
-  <!-- お題絵文字 (タップで再読み上げ) -->
-  <div class="odai-area">
-    <button class="odai-btn" id="odai-btn" aria-label="もういちどよむ">🎯</button>
-  </div>
+  <!-- お題 + 3択カードのまとまり -->
+  <div class="game-content">
+    <!-- お題絵文字 (タップで再読み上げ) -->
+    <div class="odai-area">
+      <button class="odai-btn" id="odai-btn" aria-label="もういちどよむ">🎯</button>
+    </div>
 
-  <!-- 3択カード (JS で生成) -->
-  <div class="choices" id="choices" role="group" aria-label="こたえをえらぼう"></div>
+    <!-- 3択カード (JS で生成) -->
+    <div class="choices" id="choices" role="group" aria-label="こたえをえらぼう"></div>
+  </div>
 
   <!-- UICommon の onSpeakGame フック用 (非表示) -->
   <button id="btn-speak" aria-hidden="true" tabindex="-1">🔊</button>
@@ -400,6 +463,16 @@ function buildRound() {
   });
 }
 
+// ===== 単語文字表示ヘルパー =====
+// word の highlightIdx 番目の文字に .accent クラスを付けた HTML を返す
+function buildWordHtml(word, highlightIdx) {
+  return '<span class="word-display">' +
+    word.split('').map(function(ch, i) {
+      return '<span class="w-char' + (i === highlightIdx ? ' accent' : '') + '">' + ch + '</span>';
+    }).join('') +
+    '</span>';
+}
+
 // ===== ゲーム進行 =====
 let round        = [];
 let currentIdx   = 0;
@@ -425,9 +498,11 @@ function renderQuestion() {
   answerLocked = false;
   wrongCount   = 0;
 
-  // お題絵文字を更新
+  // お題絵文字を更新 (末尾文字をアクセント表示)
   const odaiBtn = document.getElementById('odai-btn');
-  odaiBtn.textContent = q.odai.emoji;
+  const lastIdx = q.odai.word.length - 1;
+  odaiBtn.innerHTML = '<span class="odai-emoji">' + q.odai.emoji + '</span>' +
+                      buildWordHtml(q.odai.word, lastIdx);
   odaiBtn.setAttribute('aria-label', q.odai.word + ' もういちどよむ');
 
   // 選択肢カードを構築
@@ -439,7 +514,8 @@ function renderQuestion() {
     card.setAttribute('aria-label', ch.word.word);
     card.dataset.id      = ch.word.id;
     card.dataset.correct = String(ch.isCorrect);
-    card.textContent     = ch.word.emoji;
+    card.innerHTML = '<span class="choice-emoji">' + ch.word.emoji + '</span>' +
+                     buildWordHtml(ch.word.word, 0);
     card.addEventListener('click', () => handleAnswer(ch));
     choicesEl.appendChild(card);
   });
