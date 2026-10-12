@@ -28,8 +28,8 @@
     "title": "しりとり",
     "subtitle": "ことばをつなげよう！",
     "emoji": "🎯",
-    "path": null,
-    "status": "coming-soon"
+    "path": "games/shiritori/",
+    "status": "live"
   },
   {
     "id": "monoshiri-quiz",
