@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="めいろ">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-512.png">
+<title>めいろ</title>
+<link rel="stylesheet" href="../../shared/game-shell.css?v=3">
+<style>:root { --game-accent: #1DD1A1; }</style>
+<style>
+:root {
+  --bg-start:  #1a2a4a;
+  --bg-end:    #2d5a3d;
+  --accent:    #1DD1A1;
+  --maze-wall: rgba(16,24,52,0.88);
+  --maze-open: rgba(255,252,245,0.94);
+}
+
+/* ===== AGE SELECTION SCREEN ===== */
+#screen-age {
+  gap: 4vmin;
+  justify-content: center;
+  padding-top: max(60px, calc(env(safe-area-inset-top) + 56px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.age-title {
+  font-size: clamp(20px, 5vmin, 32px);
+  font-weight: 900;
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+}
+.age-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+}
+.age-btn {
+  flex: 1;
+  touch-action: manipulation;
+  padding: 0.8em 0.4em;
+  font-size: clamp(15px, 4vmin, 22px);
+  font-weight: 900;
+  background: rgba(255,255,255,0.15);
+  color: var(--white);
+  border: 2px solid rgba(255,255,255,0.35);
+  border-radius: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.age-btn.selected {
+  background: rgba(255,255,255,0.92);
+  color: var(--text-dark);
+  border-color: var(--white);
+}
+.age-btn:active { transform: scale(0.96); }
+
+/* ===== GAME SCREEN ===== */
+#screen-game {
+  justify-content: flex-start;
+  padding-top: max(54px, calc(env(safe-area-inset-top) + 48px));
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  gap: 2vmin;
+}
+#screen-game #btn-speak { display: none; }
+
+/* maze container */
+.maze-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+#maze-grid {
+  display: grid;
+  width:  min(80vmin, 320px);
+  height: min(80vmin, 320px);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+}
+.maze-wall { background: var(--maze-wall); }
+.maze-open {
+  background: var(--maze-open);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--maze-emoji-size, 22px);
+  line-height: 1;
+}
+
+/* bump micro-animation on player cell */
+@keyframes maze-bump {
+  0%,100% { transform: translate(0, 0); }
+  40%     { transform: translate(var(--bx, 0px), var(--by, 0px)); }
+}
+.maze-bumping { animation: maze-bump 0.18s ease-out forwards; }
+
+/* ===== D-PAD ===== */
+.dpad {
+  display: grid;
+  grid-template-areas: ". up ." "left . right" ". down .";
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows:    1fr 1fr 1fr;
+  gap: 5px;
+  width:  min(44vmin, 176px);
+  height: min(44vmin, 176px);
+  flex-shrink: 0;
+}
+.dpad-btn {
+  touch-action: manipulation;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.92);
+  color: #1a2a4a;
+  font-size: clamp(20px, 5.5vmin, 34px);
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.28);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dpad-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.28);
+}
+#btn-up    { grid-area: up; }
+#btn-left  { grid-area: left; }
+#btn-right { grid-area: right; }
+#btn-down  { grid-area: down; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="screen-splash" class="screen active">
+  <span class="splash-fox" aria-hidden="true">🌀</span>
+  <div class="splash-title">めいろ</div>
+</div>
+
+<!-- START SCREEN -->
+<div id="screen-start" class="screen">
+  <span class="character-idle" id="char-start" aria-hidden="true">🐭</span>
+  <div class="app-title">めいろ</div>
+  <div class="app-subtitle">ゴールまでいこう！</div>
+  <button class="btn-primary" id="btn-start" aria-label="はじめる">はじめる</button>
+  <button class="gear-btn" id="btn-gear" aria-label="せってい">⚙
+    <svg class="gear-ring" viewBox="0 0 54 54" aria-hidden="true">
+      <circle class="gear-ring-fill" cx="27" cy="27" r="27"/>
+    </svg>
+  </button>
+</div>
+
+<!-- AGE SELECTION SCREEN (extraScreens) -->
+<div id="screen-age" class="screen">
+  <button class="home-btn" id="btn-home-age" aria-label="ホームにもどる">🏠</button>
+  <div class="age-title">なんさいむけにする？</div>
+  <div class="age-row">
+    <button class="age-btn" data-age="2">2さい</button>
+    <button class="age-btn selected" data-age="3">3さい</button>
+    <button class="age-btn" data-age="4">4さい</button>
+  </div>
+  <button class="btn-primary" id="btn-start-game" aria-label="はじめる">はじめる</button>
+  <button class="btn-secondary" id="btn-back-start">もどる</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <button class="home-btn" id="btn-home-game" aria-label="ホームにもどる">🏠</button>
+  <button class="speak-btn" id="btn-speak" aria-label="もういちどよむ">🔊</button>
+
+  <div class="maze-wrap">
+    <div id="maze-grid" role="img" aria-label="めいろ"></div>
+  </div>
+
+  <div class="dpad" role="group" aria-label="ほうこうボタン">
+    <button class="dpad-btn" id="btn-up"    aria-label="うえ">▲</button>
+    <button class="dpad-btn" id="btn-left"  aria-label="ひだり">◀</button>
+    <button class="dpad-btn" id="btn-right" aria-label="みぎ">▶</button>
+    <button class="dpad-btn" id="btn-down"  aria-label="した">▼</button>
+  </div>
+</div>
+
+<!-- CLEAR SCREEN -->
+<div id="screen-clear" class="screen">
+  <div class="clear-title">すごい！</div>
+  <div class="clear-character" aria-hidden="true">🐭✨</div>
+  <div class="clear-subtitle">ゴールできたね！</div>
+  <div class="clear-buttons">
+    <button class="btn-primary" id="btn-next" style="width:100%">もういちど</button>
+    <button class="btn-secondary" id="btn-quit" style="width:100%">おわる</button>
+  </div>
+  <div class="confetti-container" id="confetti-container"></div>
+</div>
+
+<!-- PARENT MENU MODAL -->
+<div class="modal-overlay" id="modal-parent">
+  <div class="modal-box">
+    <div class="modal-title">⚙ せってい（おとなむけ）</div>
+    <div class="volume-toggle">
+      <span>おと</span>
+      <button class="toggle-switch on" id="toggle-volume" aria-label="音量切り替え"></button>
+      <span id="volume-label">オン</span>
+    </div>
+    <button class="btn-modal danger" id="btn-reset-confirm">しんちょくをリセット</button>
+    <button class="btn-modal cancel" id="btn-parent-close" style="width:100%">とじる</button>
+    <div class="modal-credit">音声: VOICEVOX / ずんだもん（あまあま）<br>© SSS合同会社</div>
+  </div>
+</div>
+
+<!-- RESET CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal-box">
+    <div class="modal-title">リセットしますか？</div>
+    <div class="modal-body">ゲームのしんちょくが すべてきえます。</div>
+    <div class="modal-row">
+      <button class="btn-modal danger" id="btn-reset-do">リセット</button>
+      <button class="btn-modal cancel" id="btn-reset-cancel">もどる</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/audio-engine.js?v=3"></script>
+<script src="../../shared/audio-player.js?v=3"></script>
+<script src="../../shared/speech.js?v=3"></script>
+<script src="../../shared/game-state.js?v=3"></script>
+<script src="../../shared/ui-common.js?v=3"></script>
+<script>
+'use strict';
+
+const STORAGE_KEY = 'meiro-v1';
+const GameState = createGameState(STORAGE_KEY, () => ({}));
+let state = null;
+
+// ===== Web Audio 拡張 (R4: AudioEngine への後付け) =====
+(function () {
+  let _ctx = null;
+  function _c() {
+    if (!_ctx) {
+      try { _ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    return _ctx;
+  }
+  function _t(freq, type, dur, gain) {
+    const c = _c();
+    if (!c || !AudioEngine.isEnabled()) return;
+    if (c.state === 'suspended') c.resume().catch(() => {});
+    try {
+      const osc = c.createOscillator(), g = c.createGain();
+      osc.connect(g); g.connect(c.destination);
+      osc.type = type;
+      const now = c.currentTime;
+      osc.frequency.setValueAtTime(freq, now);
+      g.gain.setValueAtTime(gain, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      osc.start(now); osc.stop(now + dur);
+    } catch (e) {}
+  }
+  AudioEngine.playStep = function () { _t(540, 'sine',     0.07, 0.22); };
+  AudioEngine.playBump = function () { _t(130, 'triangle', 0.14, 0.30); };
+})();
+
+// ===== 音声ファイル =====
+const SE_PRAISE  = ['../../shared/audio/se/praise_2.wav', '../../shared/audio/se/praise_3.wav'];
+const SE_CLEAR   = '../../shared/audio/se/clear.wav';
+const VOICE_FILES = ['start_voice.wav', 'goal_voice.wav'];
+
+AudioPlayer.preload([...SE_PRAISE, SE_CLEAR, ...VOICE_FILES]);
+
+// ===== 迷路データ =====
+let mazesData   = null;
+let selectedAge = 3;
+let lastMazeId  = null;
+let currentMaze = null;
+let playerR = 0, playerC = 0;
+let goalReached = false;
+let moveLocked  = false;
+let cellEls     = null;  // 2D array of cell divs
+
+fetch('data/mazes.json')
+  .then(r => r.json())
+  .then(d => { mazesData = d.mazes; })
+  .catch(() => {});
+
+// ===== 迷路選択 =====
+function pickMaze(age) {
+  const pool = mazesData.filter(m => m.age === age);
+  const cands = pool.filter(m => m.id !== lastMazeId);
+  const from = cands.length > 0 ? cands : pool;
+  return from[Math.floor(Math.random() * from.length)];
+}
+
+// ===== 迷路描画 =====
+function renderMaze(maze) {
+  const n = maze.gridSize;
+  const total = 2 * n + 1;
+  const grid = document.getElementById('maze-grid');
+
+  const tmpl = Array.from({ length: total }, (_, i) => i % 2 === 0 ? '1fr' : '5fr').join(' ');
+  grid.style.gridTemplateColumns = tmpl;
+  grid.style.gridTemplateRows    = tmpl;
+  grid.innerHTML = '';
+
+  // 絵文字サイズ: room セルの推定 px から算出
+  const gridPx  = Math.min(window.innerWidth, window.innerHeight) * 0.80;
+  const roomPx  = gridPx * (5 / (5 * n + (n + 1)));
+  grid.style.setProperty('--maze-emoji-size', Math.max(11, Math.min(roomPx * 0.76, 44)) + 'px');
+
+  cellEls = [];
+  for (let r = 0; r < total; r++) {
+    cellEls[r] = [];
+    for (let c = 0; c < total; c++) {
+      const div = document.createElement('div');
+      div.className = maze.cells[r][c] === 1 ? 'maze-wall' : 'maze-open';
+      grid.appendChild(div);
+      cellEls[r][c] = div;
+    }
+  }
+}
+
+// ===== 盤面更新 =====
+function updateMazeDisplay() {
+  if (!currentMaze || !cellEls) return;
+  const n = currentMaze.gridSize;
+  const [gr, gc] = currentMaze.goalRoom;
+  // Room cells を一括クリア
+  for (let r = 1; r < 2 * n + 1; r += 2) {
+    for (let c = 1; c < 2 * n + 1; c += 2) {
+      cellEls[r][c].textContent = '';
+    }
+  }
+  cellEls[2 * gr + 1][2 * gc + 1].textContent = '🧀';
+  cellEls[2 * playerR + 1][2 * playerC + 1].textContent = '🐭';
+}
+
+// ===== バウンスアニメ =====
+function animateBump(dRow, dCol) {
+  if (!cellEls) return;
+  const el = cellEls[2 * playerR + 1][2 * playerC + 1];
+  el.style.setProperty('--bx', (dCol * 5) + 'px');
+  el.style.setProperty('--by', (dRow * 5) + 'px');
+  el.classList.remove('maze-bumping');
+  void el.offsetWidth;
+  el.classList.add('maze-bumping');
+  setTimeout(() => el.classList.remove('maze-bumping'), 220);
+}
+
+// ===== 移動処理 =====
+function tryMove(dRow, dCol) {
+  if (goalReached || moveLocked || !currentMaze) return;
+
+  const n  = currentMaze.gridSize;
+  const nr = playerR + dRow;
+  const nc = playerC + dCol;
+
+  // 盤外チェック
+  if (nr < 0 || nr >= n || nc < 0 || nc >= n) {
+    AudioEngine.playBump();
+    animateBump(dRow, dCol);
+    return;
+  }
+  // 壁チェック: room 間の通路セルが 1=壁なら進めない
+  const wr = 2 * playerR + 1 + dRow;
+  const wc = 2 * playerC + 1 + dCol;
+  if (currentMaze.cells[wr][wc] === 1) {
+    AudioEngine.playBump();
+    animateBump(dRow, dCol);
+    return;
+  }
+
+  // 移動
+  playerR = nr;
+  playerC = nc;
+  AudioEngine.playStep();
+  updateMazeDisplay();
+
+  // ゴール判定
+  const [gr, gc] = currentMaze.goalRoom;
+  if (playerR === gr && playerC === gc) {
+    onGoalReached();
+  }
+}
+
+// ===== ゴール演出 =====
+function onGoalReached() {
+  goalReached = true;
+  moveLocked  = true;
+  AudioEngine.playCorrect();
+  const goalEl = cellEls[2 * currentMaze.goalRoom[0] + 1][2 * currentMaze.goalRoom[1] + 1];
+  UICommon.spawnStars(goalEl);
+  AudioPlayer.play(SE_PRAISE[Math.floor(Math.random() * SE_PRAISE.length)]);
+  setTimeout(() => {
+    AudioEngine.playClear();
+    UICommon.spawnConfetti();
+    AudioPlayer.play('goal_voice.wav');
+    UICommon.showScreen('clear');
+  }, 1200);
+}
+
+// ===== ゲーム開始 =====
+function startGame(age) {
+  if (!mazesData) return;
+  selectedAge = age;
+  const maze = pickMaze(age);
+  if (!maze) return;
+  lastMazeId  = maze.id;
+  currentMaze = maze;
+  goalReached = false;
+  moveLocked  = false;
+
+  renderMaze(maze);
+  updateMazeDisplay();
+  UICommon.showScreen('game');
+  AudioPlayer.play('start_voice.wav');
+}
+
+// ===== BOOT =====
+state = GameState.load();
+UICommon.init({
+  onStart: () => {
+    UICommon.showScreen('age');
+  },
+  onSpeakGame: () => {},  // 迷路に読み上げなし
+  onNextClear: () => {
+    startGame(selectedAge);
+  },
+  onReset: () => {
+    state = GameState.reset();
+  },
+  extraScreens: { age: document.getElementById('screen-age') },
+});
+
+// ===== 年齢選択画面イベント =====
+document.getElementById('btn-home-age').addEventListener('click', () => {
+  AudioEngine.playClick();
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'go-home' }, '*');
+  } else {
+    UICommon.showScreen('start');
+  }
+});
+
+document.getElementById('btn-back-start').addEventListener('click', () => {
+  AudioEngine.playClick();
+  UICommon.showScreen('start');
+});
+
+document.querySelectorAll('.age-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedAge = Number(btn.dataset.age);
+    document.querySelectorAll('.age-btn').forEach(b =>
+      b.classList.toggle('selected', b === btn)
+    );
+    AudioEngine.playClick();
+  });
+});
+
+document.getElementById('btn-start-game').addEventListener('click', () => {
+  AudioEngine.playClick();
+  startGame(selectedAge);
+});
+
+// ===== 方向ボタン =====
+document.getElementById('btn-up').addEventListener('click',    () => { AudioEngine.resume(); tryMove(-1,  0); });
+document.getElementById('btn-down').addEventListener('click',  () => { AudioEngine.resume(); tryMove( 1,  0); });
+document.getElementById('btn-left').addEventListener('click',  () => { AudioEngine.resume(); tryMove( 0, -1); });
+document.getElementById('btn-right').addEventListener('click', () => { AudioEngine.resume(); tryMove( 0,  1); });
+
+// キーボード対応 (デスクトップ確認用)
+document.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const map = { ArrowUp: [-1,0], ArrowDown: [1,0], ArrowLeft: [0,-1], ArrowRight: [0,1] };
+  const d = map[e.key];
+  if (d) { e.preventDefault(); AudioEngine.resume(); tryMove(d[0], d[1]); }
+});
+</script>
+</body>
+</html>
