@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-512.png">
 <title>くらべっこ</title>
-<link rel="stylesheet" href="../../shared/game-shell.css?v=2">
+<link rel="stylesheet" href="../../shared/game-shell.css?v=3">
 <style>:root { --game-accent: #54A0FF; }</style>
 <style>
 /* ===== compare-game 固有 CSS ===== */
@@ -264,11 +264,11 @@
   </div>
 </div>
 
-<script src="../../shared/audio-engine.js?v=2"></script>
-<script src="../../shared/audio-player.js?v=2"></script>
-<script src="../../shared/speech.js?v=2"></script>
-<script src="../../shared/game-state.js?v=2"></script>
-<script src="../../shared/ui-common.js?v=2"></script>
+<script src="../../shared/audio-engine.js?v=3"></script>
+<script src="../../shared/audio-player.js?v=3"></script>
+<script src="../../shared/speech.js?v=3"></script>
+<script src="../../shared/game-state.js?v=3"></script>
+<script src="../../shared/ui-common.js?v=3"></script>
 <script>
 'use strict';
 
@@ -282,8 +282,8 @@ const PRELOAD_FILES = [
   'q_size_big.wav', 'q_size_small.wav',
   'q_length_long.wav', 'q_length_short.wav',
   'q_count_many.wav', 'q_count_few.wav',
-  'praise_1.wav', 'praise_2.wav', 'praise_3.wav',
-  'hint.wav', 'clear.wav',
+  'praise_1.wav', '../../shared/audio/se/praise_2.wav', '../../shared/audio/se/praise_3.wav',
+  'hint.wav', '../../shared/audio/se/clear.wav',
 ];
 
 // ===== GAME STATE =====
@@ -627,7 +627,8 @@ function onCorrect(side) {
 
   const praiseIdx = Math.floor(Math.random() * 3) + 1;
   const praises   = ['できたね！', 'すごい！', 'やったね！'];
-  Speech.speak(praises[praiseIdx - 1], `praise_${praiseIdx}.wav`);
+  const praiseFile = praiseIdx === 1 ? 'praise_1.wav' : `../../shared/audio/se/praise_${praiseIdx}.wav`;
+  Speech.speak(praises[praiseIdx - 1], praiseFile);
 
   session.questionIndex++;
   UICommon.renderProgress(session.questionIndex, QUESTIONS_PER_SET);
@@ -661,7 +662,7 @@ function showHint() {
 
 function showClear() {
   AudioEngine.playClear();
-  Speech.speak('ぜんぶ できたね！', 'clear.wav');
+  Speech.speak('ぜんぶ できたね！', '../../shared/audio/se/clear.wav');
   UICommon.spawnConfetti();
   UICommon.showScreen('clear');
 }

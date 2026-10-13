@@ -17,7 +17,7 @@ const AudioPlayer = (() => {
       if (pool.has(file)) return;
       const a = new Audio();
       a.preload = 'auto';
-      a.src = `audio/${file}`;
+      a.src = file.startsWith('../../') ? file : `audio/${file}`;
       pool.set(file, a);
     });
   }

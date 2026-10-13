@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-512.png">
 <title>しりとり</title>
-<link rel="stylesheet" href="../../shared/game-shell.css?v=2">
+<link rel="stylesheet" href="../../shared/game-shell.css?v=3">
 <style>
 :root { --game-accent: #A29BFE; }
 :root {
@@ -278,11 +278,11 @@
 </div>
 
 <!-- shared/ 読み込み順は decisions/001-shared-design.md のとおり -->
-<script src="../../shared/audio-engine.js?v=2"></script>
-<script src="../../shared/audio-player.js?v=2"></script>
-<script src="../../shared/speech.js?v=2"></script>
-<script src="../../shared/game-state.js?v=2"></script>
-<script src="../../shared/ui-common.js?v=2"></script>
+<script src="../../shared/audio-engine.js?v=3"></script>
+<script src="../../shared/audio-player.js?v=3"></script>
+<script src="../../shared/speech.js?v=3"></script>
+<script src="../../shared/game-state.js?v=3"></script>
+<script src="../../shared/ui-common.js?v=3"></script>
 <script>
 'use strict';
 
@@ -564,9 +564,10 @@ function handleAnswer(ch) {
     UICommon.jumpCharacter();
 
     const praiseIdx = Math.floor(Math.random() * 3) + 1;
+    const praiseFile = praiseIdx === 1 ? 'audio/se/praise_1.wav' : '../../shared/audio/se/praise_' + praiseIdx + '.wav';
     ShiritoriAudio.playSequence([
-      { file: 'audio/words/' + ch.word.id + '.wav',          tts: ch.word.word },
-      { file: 'audio/se/praise_' + praiseIdx + '.wav',        tts: '' },
+      { file: 'audio/words/' + ch.word.id + '.wav', tts: ch.word.word },
+      { file: praiseFile,                            tts: '' },
     ]);
 
     correctTimer = setTimeout(() => {
@@ -610,7 +611,7 @@ function advanceQuestion() {
     setTimeout(() => {
       AudioEngine.playClear();
       ShiritoriAudio.playSequence([
-        { file: 'audio/se/clear.wav', tts: 'ぜんぶできたね！' },
+        { file: '../../shared/audio/se/clear.wav', tts: 'ぜんぶできたね！' },
       ]);
       UICommon.spawnConfetti();
       UICommon.showScreen('clear');
@@ -628,9 +629,9 @@ fetch('data/words.json')
     questionCandidates = buildQuestionCandidates(allWords);
     ShiritoriAudio.preload([
       'audio/se/praise_1.wav',
-      'audio/se/praise_2.wav',
-      'audio/se/praise_3.wav',
-      'audio/se/clear.wav',
+      '../../shared/audio/se/praise_2.wav',
+      '../../shared/audio/se/praise_3.wav',
+      '../../shared/audio/se/clear.wav',
     ]);
     const btn = document.getElementById('btn-start');
     btn.disabled    = false;

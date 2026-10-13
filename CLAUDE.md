@@ -12,7 +12,7 @@ index.html              ポータル本体（単一HTML・Vanilla JS）
 games.json              ゲームカタログ（id/title/subtitle/emoji/path/status の6項目）
 games/<id>/             各ゲームフォルダ（独立した単一HTML）
 games/_template/        新ゲーム用テンプレート（games.json には登録しない）
-shared/                 全ゲーム共通部品（6ファイル）
+shared/                 全ゲーム共通部品（6ファイル + 共有SE音声）
 icons/                  ポータル用アイコン画像（PNG）
 icons/source/           アイコン正本SVG（portal_icon.svg）
 scripts/                generate_icon.py 等のユーティリティ
@@ -32,7 +32,15 @@ shared/
   speech.js           Speech IIFE — TTS フォールバック付き読み上げ
   game-state.js       createGameState() ファクトリ — localStorage 管理
   ui-common.js        UICommon IIFE — 画面遷移・アニメ・共通イベント
+  audio/se/           全ゲーム共有の SE（効果音）wav ファイル
+    clear.wav           クリア音
+    praise_2.wav        ほめ言葉2（すごい！）
+    praise_3.wav        ほめ言葉3（やったね！）
+    question.wav        問題提示音
 ```
+
+新ゲームの SE は `shared/audio/se/` のファイルを優先して使う。
+ゲーム固有の SE（別録音、または既存と内容が違う場合）は `games/<id>/audio/` に置く。
 
 ## 実装ルール
 
@@ -46,13 +54,17 @@ shared/
 ### shared/ 読み込みの書き方
 
 ```html
-<link rel="stylesheet" href="../../shared/game-shell.css?v=2">
-<script src="../../shared/audio-engine.js?v=2"></script>
-<script src="../../shared/audio-player.js?v=2"></script>
-<script src="../../shared/speech.js?v=2"></script>
-<script src="../../shared/game-state.js?v=2"></script>
-<script src="../../shared/ui-common.js?v=2"></script>
+<link rel="stylesheet" href="../../shared/game-shell.css?v=3">
+<script src="../../shared/audio-engine.js?v=3"></script>
+<script src="../../shared/audio-player.js?v=3"></script>
+<script src="../../shared/speech.js?v=3"></script>
+<script src="../../shared/game-state.js?v=3"></script>
+<script src="../../shared/ui-common.js?v=3"></script>
 ```
+
+`shared/audio/se/` の SE ファイルは `'../../shared/audio/se/<file>'` で参照する。
+`AudioPlayer.preload` や `Speech.speak` に `'../../'` で始まるパスを渡すと、
+`audio-player.js` がそのまま使う（`audio/` プレフィックスを付けない）。
 
 ## 音声アンロック (R1)
 
@@ -125,7 +137,7 @@ shared/ のファイルを変更したら、全ゲームの `index.html` で
 - バージョンは `v=1` から始まり、shared/ の変更ごとに +1 する
 - 変更していない shared ファイルも番号を揃える（揃えないとゲームによって版が混在する）
 - shared/ を変更したら全ゲームでスタート→ゲーム→クリアを確認してからコミットする
-- 現在 `?v=2`（デザイン刷新(案D)で game-shell.css を変更）
+- 現在 `?v=3`（shared/audio-player.js を変更: `../../` で始まるパスを直接使えるよう修正）
 
 ## アイコン
 

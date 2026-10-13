@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-512.png">
 <title>TODO: ゲームタイトル</title>
-<link rel="stylesheet" href="../../shared/game-shell.css?v=2">
+<link rel="stylesheet" href="../../shared/game-shell.css?v=3">
 <!-- TODO: ゲームのアクセント色を設定する（ポータルカードの色と合わせる） -->
 <style>:root { --game-accent: #XXXXXX; }</style>
 <style>
@@ -142,11 +142,11 @@
 </div>
 
 <!-- shared/ 読み込み順は決定メモ(docs/decisions/001-shared-design.md)のとおり -->
-<script src="../../shared/audio-engine.js?v=2"></script>
-<script src="../../shared/audio-player.js?v=2"></script>
-<script src="../../shared/speech.js?v=2"></script>
-<script src="../../shared/game-state.js?v=2"></script>
-<script src="../../shared/ui-common.js?v=2"></script>
+<script src="../../shared/audio-engine.js?v=3"></script>
+<script src="../../shared/audio-player.js?v=3"></script>
+<script src="../../shared/speech.js?v=3"></script>
+<script src="../../shared/game-state.js?v=3"></script>
+<script src="../../shared/ui-common.js?v=3"></script>
 <script>
 'use strict';
 
@@ -156,7 +156,16 @@
 // const NEXT_DELAY        = 2000;         // ms
 
 // TODO: 音声ファイルリスト → AudioPlayer.preload() に渡す
-// const PRELOAD_FILES = ['question.wav', 'correct.wav', 'clear.wav'];
+// shared/audio/se/ の共有 SE は '../../shared/audio/se/<file>' で参照する。
+// ゲーム固有の音声は 'audio/<file>.wav' で参照する（AudioPlayer が audio/ を自動補完）。
+// const PRELOAD_FILES = [
+//   '../../shared/audio/se/question.wav',    // 共有SE
+//   '../../shared/audio/se/praise_2.wav',    // 共有SE
+//   '../../shared/audio/se/praise_3.wav',    // 共有SE
+//   '../../shared/audio/se/clear.wav',       // 共有SE
+//   'praise_1.wav',                          // ゲーム固有SE
+//   'hint.wav',                              // ゲーム固有SE
+// ];
 
 // TODO: GameState を有効化する (STORAGE_KEY を定義してから)
 // const GameState = createGameState(STORAGE_KEY, () => ({

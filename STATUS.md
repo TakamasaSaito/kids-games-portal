@@ -31,6 +31,7 @@
 - [x] **改善**: ものしりクイズ 正解後 1.5秒自動進行 (514ffda)
 - [x] **デザイン刷新(案D)**: 星かざり・3D底面影・--game-accent 適用 (shared/game-shell.css v=2)
 - [x] **共通化 P1〜P3**: STATUS.md 整理・_template --game-accent 追加・しりとり © 表記修正
+- [x] **共通化 P4**: SE wav を shared/audio/se/ に集約（audio-player.js パス対応・?v=3 バンプ）
 
 ## 近日公開（予定）
 
@@ -38,10 +39,8 @@
 
 ## 残タスク
 
-- [ ] shared/ 共通化 P4（SE wav の shared/audio/se/ への移動） — audio-player.js のパス設計要検討
 - [ ] 旧3リポジトリの README 誘導リンク追記（ステップ4）
 
 ## 次の一手
 
-shared/ 共通化 P4: SE wav（praise_2, praise_3, clear, question）を shared/audio/se/ に移動する。
-事前に audio-player.js のパス処理（`audio/${file}` 固定）の最小修正方針を確定してから実施する。
+新ゲーム追加、または旧3リポジトリへの誘導リンク追記（ステップ4）。

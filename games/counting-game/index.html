@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-512.png">
 <title>いちにのぽん!</title>
-<link rel="stylesheet" href="../../shared/game-shell.css?v=2">
+<link rel="stylesheet" href="../../shared/game-shell.css?v=3">
 <style>:root { --game-accent: #FF9F43; }</style>
 <style>
 /* ===== counting-game 固有 CSS ===== */
@@ -290,11 +290,11 @@
   </div>
 </div>
 
-<script src="../../shared/audio-engine.js?v=2"></script>
-<script src="../../shared/audio-player.js?v=2"></script>
-<script src="../../shared/speech.js?v=2"></script>
-<script src="../../shared/game-state.js?v=2"></script>
-<script src="../../shared/ui-common.js?v=2"></script>
+<script src="../../shared/audio-engine.js?v=3"></script>
+<script src="../../shared/audio-player.js?v=3"></script>
+<script src="../../shared/speech.js?v=3"></script>
+<script src="../../shared/game-state.js?v=3"></script>
+<script src="../../shared/ui-common.js?v=3"></script>
 <script>
 'use strict';
 
@@ -312,7 +312,7 @@ const NEXT_DELAY        = 2000;
 const STORAGE_KEY       = 'counting-game-v1';
 const ANSWER_COLORS     = ['#FF6B6B','#48DBFB','#1DD1A1'];
 
-const PRELOAD_FILES = ['question.wav','praise_1.wav','praise_2.wav','praise_3.wav','hint.wav','clear.wav'];
+const PRELOAD_FILES = ['../../shared/audio/se/question.wav','praise_1.wav','../../shared/audio/se/praise_2.wav','../../shared/audio/se/praise_3.wav','hint.wav','../../shared/audio/se/clear.wav'];
 
 // ===== GAME-SPECIFIC EXTENSIONS =====
 // playPop: 絵文字タップ時の効果音 (shared AudioEngine に追加)
@@ -502,7 +502,7 @@ function nextQuestion() {
 
   requestAnimationFrame(() => { renderEmojiField(n, emoji); });
 
-  Speech.speak('ぜんぶで いくつかな', 'question.wav');
+  Speech.speak('ぜんぶで いくつかな', '../../shared/audio/se/question.wav');
 }
 
 function emojiSize(n) {
@@ -594,7 +594,8 @@ function onCorrect(btn, num) {
 
   const praiseIdx = Math.floor(Math.random() * 3) + 1;
   const praises   = ['できたね！', 'すごい！', 'やったね！'];
-  Speech.speak(praises[praiseIdx - 1], `praise_${praiseIdx}.wav`);
+  const praiseFile = praiseIdx === 1 ? 'praise_1.wav' : `../../shared/audio/se/praise_${praiseIdx}.wav`;
+  Speech.speak(praises[praiseIdx - 1], praiseFile);
 
   session.questionIndex++;
   UICommon.renderProgress(session.questionIndex, QUESTIONS_PER_SET);
@@ -626,7 +627,7 @@ function showHint() {
 
 function showClear() {
   AudioEngine.playClear();
-  Speech.speak('ぜんぶ できたね！', 'clear.wav');
+  Speech.speak('ぜんぶ できたね！', '../../shared/audio/se/clear.wav');
   UICommon.spawnConfetti();
   document.getElementById('clear-subtitle').textContent = '10もん ぜんぶ できたね！';
   UICommon.showScreen('clear');
@@ -662,7 +663,7 @@ state = GameState.load();
 AudioPlayer.preload(PRELOAD_FILES);
 UICommon.init({
   onStart:     () => { startGame(); },
-  onSpeakGame: () => { Speech.speak('ぜんぶで いくつかな', 'question.wav'); },
+  onSpeakGame: () => { Speech.speak('ぜんぶで いくつかな', '../../shared/audio/se/question.wav'); },
   onNextClear: () => { startGame(); },
   onReset:     () => { state = GameState.reset(); },
   renderStats: () => { renderParentStats(); },
