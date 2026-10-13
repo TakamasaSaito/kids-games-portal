@@ -95,12 +95,34 @@
   line-height: 1;
 }
 
-/* bump micro-animation on player cell */
+/* bump: ぶつかり方向へ押されてぶるっと震える (0.30s) */
 @keyframes maze-bump {
-  0%,100% { transform: translate(0, 0); }
-  40%     { transform: translate(var(--bx, 0px), var(--by, 0px)); }
+  0%   { transform: translate(0,0) scale(1); }
+  18%  { transform: translate(calc(var(--bx,0px)*1.3), calc(var(--by,0px)*1.3)) scale(0.88); }
+  40%  { transform: translate(calc(var(--bx,0px)*-0.6), calc(var(--by,0px)*-0.6)) scale(1.06); }
+  58%  { transform: translate(calc(var(--bx,0px)*0.3),  calc(var(--by,0px)*0.3))  scale(0.97); }
+  74%  { transform: translate(calc(var(--bx,0px)*-0.12),calc(var(--by,0px)*-0.12)) scale(1.01); }
+  88%  { transform: translate(calc(var(--bx,0px)*0.04), calc(var(--by,0px)*0.04)) scale(1); }
+  100% { transform: translate(0,0) scale(1); }
 }
-.maze-bumping { animation: maze-bump 0.18s ease-out forwards; }
+.maze-bumping { animation: maze-bump 0.30s ease-out forwards; }
+
+/* 赤い ✖ マーク: ネズミの頭上に一瞬表示して消える (0.50s) */
+.bump-mark {
+  position: fixed;
+  pointer-events: none;
+  z-index: 150;
+  color: #ff4757;
+  font-weight: 900;
+  line-height: 1;
+  animation: bump-mark 0.50s ease-out forwards;
+}
+@keyframes bump-mark {
+  0%   { opacity: 0; transform: translate(-50%, -90%)  scale(0.4); }
+  28%  { opacity: 1; transform: translate(-50%, -108%) scale(1.15); }
+  62%  { opacity: 1; transform: translate(-50%, -112%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -128%) scale(0.85); }
+}
 
 /* ===== D-PAD ===== */
 .dpad {
@@ -250,7 +272,7 @@ let state = null;
     }
     return _ctx;
   }
-  function _t(freq, type, dur, gain) {
+  function _t(freq, type, start, dur, gain) {
     const c = _c();
     if (!c || !AudioEngine.isEnabled()) return;
     if (c.state === 'suspended') c.resume().catch(() => {});
@@ -258,15 +280,23 @@ let state = null;
       const osc = c.createOscillator(), g = c.createGain();
       osc.connect(g); g.connect(c.destination);
       osc.type = type;
-      const now = c.currentTime;
-      osc.frequency.setValueAtTime(freq, now);
-      g.gain.setValueAtTime(gain, now);
-      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
-      osc.start(now); osc.stop(now + dur);
+      osc.frequency.setValueAtTime(freq, start);
+      g.gain.setValueAtTime(gain, start);
+      g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+      osc.start(start); osc.stop(start + dur);
     } catch (e) {}
   }
-  AudioEngine.playStep = function () { _t(540, 'sine',     0.07, 0.22); };
-  AudioEngine.playBump = function () { _t(130, 'triangle', 0.14, 0.30); };
+  AudioEngine.playStep = function () {
+    const c = _c(); if (!c) return;
+    _t(540, 'sine', c.currentTime, 0.07, 0.22);
+  };
+  // 「ぶー」と下がる2音 (高め→低め、控えめ音量)
+  AudioEngine.playBump = function () {
+    const c = _c(); if (!c) return;
+    const now = c.currentTime;
+    _t(185, 'triangle', now,        0.11, 0.16);
+    _t(105, 'triangle', now + 0.11, 0.14, 0.14);
+  };
 })();
 
 // ===== 音声ファイル =====
@@ -342,16 +372,30 @@ function updateMazeDisplay() {
   cellEls[2 * playerR + 1][2 * playerC + 1].textContent = '🐭';
 }
 
-// ===== バウンスアニメ =====
+// ===== バウンス + ✖マーク =====
 function animateBump(dRow, dCol) {
   if (!cellEls) return;
   const el = cellEls[2 * playerR + 1][2 * playerC + 1];
-  el.style.setProperty('--bx', (dCol * 5) + 'px');
-  el.style.setProperty('--by', (dRow * 5) + 'px');
+
+  // 震えアニメ (連打で毎回リセット)
+  el.style.setProperty('--bx', (dCol * 6) + 'px');
+  el.style.setProperty('--by', (dRow * 6) + 'px');
   el.classList.remove('maze-bumping');
   void el.offsetWidth;
   el.classList.add('maze-bumping');
-  setTimeout(() => el.classList.remove('maze-bumping'), 220);
+  setTimeout(() => el.classList.remove('maze-bumping'), 320);
+
+  // 赤い ✖ をネズミ頭上に表示 (既存マークは先に削除して重ならないようにする)
+  document.querySelectorAll('.bump-mark').forEach(m => m.remove());
+  const rect = el.getBoundingClientRect();
+  const mark = document.createElement('div');
+  mark.className = 'bump-mark';
+  mark.textContent = '✖';
+  mark.style.fontSize = Math.max(10, rect.width * 0.55) + 'px';
+  mark.style.left = (rect.left + rect.width / 2) + 'px';
+  mark.style.top  = rect.top + 'px';
+  document.body.appendChild(mark);
+  setTimeout(() => mark.remove(), 550);
 }
 
 // ===== 移動処理 =====
