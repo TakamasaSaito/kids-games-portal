@@ -350,8 +350,8 @@
 // ===== CONSTANTS =====
 
 const LEVELS = [
-  { name: '3さい', emoji: '⭐',       totalMin: 3, totalMax: 6,  missingMin: 1, missingMax: 2, choices: 2, questions: 6, hintAt: 2 },
-  { name: '4さい', emoji: '⭐⭐',     totalMin: 5, totalMax: 8,  missingMin: 1, missingMax: 3, choices: 3, questions: 8, hintAt: 2 },
+  { name: '3さい', emoji: '⭐',       totalMin: 3, totalMax: 6,  missingMin: 1, missingMax: 3, choices: 2, questions: 6, hintAt: 2 },
+  { name: '4さい', emoji: '⭐⭐',     totalMin: 5, totalMax: 8,  missingMin: 1, missingMax: 4, choices: 3, questions: 8, hintAt: 2 },
   { name: '5さい', emoji: '⭐⭐⭐',   totalMin: 7, totalMax: 10, missingMin: 1, missingMax: 4, choices: 3, questions: 8, hintAt: 3 },
 ];
 
@@ -364,9 +364,9 @@ const COUNT_WORDS   = ['いち','に','さん','し','ご','ろく','しち','�
 // 全レベルで使う (total, have) の組み合わせ
 const PRELOAD_FILES = [
   'q_3_1.wav', 'q_3_2.wav',
-  'q_4_2.wav', 'q_4_3.wav',
-  'q_5_2.wav', 'q_5_3.wav', 'q_5_4.wav',
-  'q_6_3.wav', 'q_6_4.wav', 'q_6_5.wav',
+  'q_4_1.wav', 'q_4_2.wav', 'q_4_3.wav',
+  'q_5_1.wav', 'q_5_2.wav', 'q_5_3.wav', 'q_5_4.wav',
+  'q_6_2.wav', 'q_6_3.wav', 'q_6_4.wav', 'q_6_5.wav',
   'q_7_3.wav', 'q_7_4.wav', 'q_7_5.wav', 'q_7_6.wav',
   'q_8_4.wav', 'q_8_5.wav', 'q_8_6.wav', 'q_8_7.wav',
   'q_9_5.wav', 'q_9_6.wav', 'q_9_7.wav', 'q_9_8.wav',
@@ -476,15 +476,16 @@ function makeChoices(correct, count) {
 }
 
 function generateQuestion(levelIdx) {
-  const lv = LEVELS[levelIdx];
+  const lv      = LEVELS[levelIdx];
+  const missing = session.missingSeq[session.missingSeqIdx++];
   let total, tries = 0;
   do {
     total = randInt(lv.totalMin, lv.totalMax);
     tries++;
-  } while (total === session.prevTotal && tries < 20);
+  } while (tries < 20 && (total === session.prevTotal || total <= missing));
+  if (total <= missing) total = missing + 1;
 
-  const missing = session.missingSeq[session.missingSeqIdx++];
-  const have    = total - missing;
+  const have = total - missing;
   const choices = makeChoices(missing, lv.choices);
   const emoji   = pick(EMOJI_POOL);
   return { total, missing, have, choices, emoji };
@@ -514,6 +515,7 @@ function renderBoxField(q, showEmpty) {
   hardLbl.style.display = isHard ? '' : 'none';
   hardLbl.textContent   = isHard ? 'ぜんぶで ' + q.total + ' こ' : '';
 
+  const canCount = state.currentLevel === 2;
   boxRow.innerHTML = '';
 
   for (let i = 0; i < q.have; i++) {
@@ -521,7 +523,7 @@ function renderBoxField(q, showEmpty) {
     b.className = 'box filled';
     b.style.cssText = 'width:' + sz + ';height:' + sz + ';font-size:' + fs;
     b.textContent = q.emoji;
-    b.addEventListener('click', function() { onBoxTap(b); });
+    if (canCount) b.addEventListener('click', function() { onBoxTap(b); });
     boxRow.appendChild(b);
   }
 
@@ -531,7 +533,7 @@ function renderBoxField(q, showEmpty) {
     const hidden = isHard && !showEmpty;
     b.className = 'box empty' + (hidden ? ' hidden' : '');
     b.style.cssText = 'width:' + sz + ';height:' + sz;
-    if (!hidden) b.addEventListener('click', function() { onBoxTap(b); });
+    if (!hidden && canCount) b.addEventListener('click', function() { onBoxTap(b); });
     boxRow.appendChild(b);
   }
 }
