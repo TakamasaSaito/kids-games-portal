@@ -229,7 +229,7 @@
   <div class="app-title">たりない<br>かず</div>
   <div class="app-subtitle">かくれたかずはなにかな。</div>
   <button class="btn-primary" id="btn-start" aria-label="はじめる">はじめる</button>
-  <button class="btn-secondary" id="btn-level-select" style="margin-top:0.5em">むずかしさをえらぶ</button>
+  <button class="btn-secondary" id="btn-level-select" style="margin-top:0.5em">ねんれいをえらぶ</button>
   <button class="gear-btn" id="btn-gear" aria-label="せってい">⚙
     <svg class="gear-ring" viewBox="0 0 54 54" aria-hidden="true">
       <circle class="gear-ring-fill" cx="27" cy="27" r="27"/>
@@ -240,7 +240,7 @@
 <!-- LEVEL SELECT SCREEN -->
 <div id="screen-level" class="screen">
   <button class="home-btn" id="btn-home-level" aria-label="ホームにもどる">🏠</button>
-  <div class="screen-title">むずかしさをえらぼう</div>
+  <div class="screen-title">ねんれいをえらぼう</div>
   <div class="level-list" id="level-list"></div>
   <button class="btn-secondary" id="btn-back-start">もどる</button>
 </div>
@@ -314,9 +314,9 @@
 // ===== CONSTANTS =====
 
 const LEVELS = [
-  { name: 'かんたん',   emoji: '⭐',       totalMin: 3, totalMax: 6,  missingMin: 1, missingMax: 2, choices: 2, questions: 6, hintAt: 2 },
-  { name: 'ふつう',     emoji: '⭐⭐',     totalMin: 5, totalMax: 8,  missingMin: 1, missingMax: 3, choices: 3, questions: 8, hintAt: 2 },
-  { name: 'むずかしい', emoji: '⭐⭐⭐',   totalMin: 7, totalMax: 10, missingMin: 1, missingMax: 4, choices: 3, questions: 8, hintAt: 3 },
+  { name: '3さい', emoji: '⭐',       totalMin: 3, totalMax: 6,  missingMin: 1, missingMax: 2, choices: 2, questions: 6, hintAt: 2 },
+  { name: '4さい', emoji: '⭐⭐',     totalMin: 5, totalMax: 8,  missingMin: 1, missingMax: 3, choices: 3, questions: 8, hintAt: 2 },
+  { name: '5さい', emoji: '⭐⭐⭐',   totalMin: 7, totalMax: 10, missingMin: 1, missingMax: 4, choices: 3, questions: 8, hintAt: 3 },
 ];
 
 const EMOJI_POOL    = ['🍎','🍌','🍓','🍊','🐶','🐱','🐰','🐼','🌸','🍩','🎈','🚗'];
@@ -369,6 +369,24 @@ function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ===== QUESTION GENERATOR =====
 
+function buildMissingSeq(lv) {
+  const range = lv.missingMax - lv.missingMin + 1;
+  const base  = [];
+  for (let i = 0; i < lv.questions; i++) {
+    base.push(lv.missingMin + (i % range));
+  }
+  const a = shuffle(base);
+  // 連続する同値を解消（隣接する同じ答えを後ろの別値とswap）
+  for (let i = 1; i < a.length; i++) {
+    if (a[i] === a[i - 1]) {
+      for (let j = i + 1; j < a.length; j++) {
+        if (a[j] !== a[i - 1]) { [a[i], a[j]] = [a[j], a[i]]; break; }
+      }
+    }
+  }
+  return a;
+}
+
 function makeChoices(correct, count) {
   const cands = [];
   for (let d = 1; d <= 6 && cands.length < count * 3; d++) {
@@ -378,19 +396,18 @@ function makeChoices(correct, count) {
   return shuffle([correct, ...shuffle(cands).slice(0, count - 1)]);
 }
 
-function generateQuestion(levelIdx, prevTotal) {
+function generateQuestion(levelIdx) {
   const lv = LEVELS[levelIdx];
   let total, tries = 0;
   do {
     total = randInt(lv.totalMin, lv.totalMax);
     tries++;
-  } while (total === prevTotal && tries < 20);
+  } while (total === session.prevTotal && tries < 20);
 
-  const missingMax = Math.min(lv.missingMax, total - 1);
-  const missing    = randInt(lv.missingMin, missingMax);
-  const have       = total - missing;
-  const choices    = makeChoices(missing, lv.choices);
-  const emoji      = pick(EMOJI_POOL);
+  const missing = session.missingSeq[session.missingSeqIdx++];
+  const have    = total - missing;
+  const choices = makeChoices(missing, lv.choices);
+  const emoji   = pick(EMOJI_POOL);
   return { total, missing, have, choices, emoji };
 }
 
@@ -464,12 +481,14 @@ function renderLevelList() {
 
 function startGame() {
   session = {
-    questionIndex: 0,
-    wrongCount:    0,
-    prevTotal:     null,
-    locked:        false,
-    current:       null,
-    hintShown:     false,
+    questionIndex:  0,
+    wrongCount:     0,
+    prevTotal:      null,
+    locked:         false,
+    current:        null,
+    hintShown:      false,
+    missingSeq:     buildMissingSeq(LEVELS[state.currentLevel]),
+    missingSeqIdx:  0,
   };
   UICommon.showScreen('game');
   nextQuestion();
@@ -481,7 +500,7 @@ function nextQuestion() {
   session.wrongCount = 0;
   session.hintShown  = false;
 
-  const q = generateQuestion(state.currentLevel, session.prevTotal);
+  const q = generateQuestion(state.currentLevel);
   session.current   = q;
   session.prevTotal = q.total;
 
