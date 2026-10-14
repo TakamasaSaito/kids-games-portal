@@ -109,6 +109,41 @@
   justify-content: center;
   border-radius: 12px;
   flex-shrink: 0;
+  position: relative;
+}
+
+.box.filled,
+.box.empty:not(.hidden) {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.box.count-bounce { animation: count-box-bounce 0.35s ease-out; }
+@keyframes count-box-bounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.22); }
+  65%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+.box-count-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  background: var(--game-accent);
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  pointer-events: none;
+  line-height: 1;
 }
 
 .box.filled {
@@ -199,7 +234,8 @@
   .answer-btn.correct,
   .answer-btn.wrong,
   .box.hint-glow,
-  .box.fill-in {
+  .box.fill-in,
+  .box.count-bounce {
     animation: none !important;
     transition: none !important;
   }
@@ -323,6 +359,7 @@ const EMOJI_POOL    = ['🍎','🍌','🍓','🍊','🐶','🐱','🐰','🐼','
 const ANSWER_COLORS = ['#FF6B6B','#48DBFB','#1DD1A1'];
 const NEXT_DELAY    = 2000;
 const STORAGE_KEY   = 'tarinai-kazu-v1';
+const COUNT_WORDS   = ['いち','に','さん','し','ご','ろく','しち','はち','きゅう','じゅう'];
 
 // 全レベルで使う (total, have) の組み合わせ
 const PRELOAD_FILES = [
@@ -338,6 +375,48 @@ const PRELOAD_FILES = [
   '../../shared/audio/se/praise_3.wav',
   '../../shared/audio/se/clear.wav',
 ];
+
+// ===== COUNT AUDIO =====
+
+const countPool = new Map();
+for (let i = 1; i <= 10; i++) {
+  const a = new Audio();
+  a.preload = 'auto';
+  a.src = 'audio/count_' + i + '.wav';
+  countPool.set(i, a);
+}
+
+// AudioPlayer.unlock を拡張して countPool も解除する
+const _origUnlock = AudioPlayer.unlock.bind(AudioPlayer);
+AudioPlayer.unlock = function() {
+  _origUnlock();
+  countPool.forEach(function(a) { if (a.readyState === 0) a.load(); });
+};
+
+AudioPlayer.playCount = function(n, fallback) {
+  countPool.forEach(function(a) { if (!a.paused) { a.pause(); a.currentTime = 0; } });
+  const a = countPool.get(n);
+  if (!a) { fallback && fallback(); return; }
+  a.currentTime = 0;
+  const p = a.play();
+  if (p) p.catch(function(err) {
+    if (err && err.name === 'AbortError') return;
+    fallback && fallback();
+  });
+};
+
+Speech.speakCount = function(n) {
+  if (!AudioEngine.isEnabled()) return;
+  AudioPlayer.playCount(n, function() {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(COUNT_WORDS[n - 1]);
+      u.lang = 'ja-JP';
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  });
+};
 
 // ===== GAME STATE =====
 
@@ -442,14 +521,17 @@ function renderBoxField(q, showEmpty) {
     b.className = 'box filled';
     b.style.cssText = 'width:' + sz + ';height:' + sz + ';font-size:' + fs;
     b.textContent = q.emoji;
+    b.addEventListener('click', function() { onBoxTap(b); });
     boxRow.appendChild(b);
   }
 
   for (let i = 0; i < q.missing; i++) {
     const b = document.createElement('div');
     b.dataset.empty = '1';
-    b.className = 'box empty' + (isHard && !showEmpty ? ' hidden' : '');
+    const hidden = isHard && !showEmpty;
+    b.className = 'box empty' + (hidden ? ' hidden' : '');
     b.style.cssText = 'width:' + sz + ';height:' + sz;
+    if (!hidden) b.addEventListener('click', function() { onBoxTap(b); });
     boxRow.appendChild(b);
   }
 }
@@ -489,6 +571,7 @@ function startGame() {
     hintShown:      false,
     missingSeq:     buildMissingSeq(LEVELS[state.currentLevel]),
     missingSeqIdx:  0,
+    tapCount:       0,
   };
   UICommon.showScreen('game');
   nextQuestion();
@@ -499,6 +582,7 @@ function nextQuestion() {
   session.locked     = false;
   session.wrongCount = 0;
   session.hintShown  = false;
+  session.tapCount   = 0;
 
   const q = generateQuestion(state.currentLevel);
   session.current   = q;
@@ -512,6 +596,22 @@ function nextQuestion() {
     'ぜんぶで ' + q.total + ' こ。いま ' + q.have + ' こ。あと いくつ。',
     'q_' + q.total + '_' + q.have + '.wav'
   );
+}
+
+// ===== BOX TAP (counting) =====
+
+function onBoxTap(box) {
+  if (session.locked) return;
+  if (box.dataset.counted === '1') return;
+  box.dataset.counted = '1';
+  session.tapCount++;
+  const badge = document.createElement('span');
+  badge.className = 'box-count-badge';
+  badge.textContent = session.tapCount;
+  box.appendChild(badge);
+  box.classList.add('count-bounce');
+  setTimeout(function() { box.classList.remove('count-bounce'); }, 400);
+  Speech.speakCount(session.tapCount);
 }
 
 function renderAnswerBtns(choices) {
@@ -588,6 +688,7 @@ function showHint() {
   session.hintShown = true;
   const isHard = state.currentLevel === 2;
   if (isHard) {
+    session.tapCount = 0;
     renderBoxField(session.current, true);
   }
   document.querySelectorAll('.box.empty').forEach(b => b.classList.add('hint-glow'));
