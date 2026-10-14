@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="たりないかず">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-512.png">
+<title>たりないかず</title>
+<link rel="stylesheet" href="../../shared/game-shell.css?v=3">
+<style>:root { --game-accent: #5E60CE; }</style>
+<style>
+/* ===== tarinai-kazu 固有 CSS ===== */
+
+/* LEVEL SELECT */
+#screen-level { gap: 2.5vmin; overflow: hidden; }
+
+.screen-title {
+  font-size: clamp(22px, 6vmin, 42px);
+  font-weight: 900;
+  color: var(--white);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+
+.level-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 2vmin, 14px);
+  width: min(360px, 88vw);
+}
+
+.level-card {
+  touch-action: manipulation;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  font-weight: 900;
+  cursor: pointer;
+  border: none;
+  background: var(--white);
+  color: var(--text-dark);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.28);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+  -webkit-tap-highlight-color: transparent;
+  padding: clamp(14px, 3vmin, 20px) clamp(16px, 4vmin, 24px);
+  font-size: clamp(20px, 5vmin, 30px);
+}
+.level-card:active { transform: translateY(4px); box-shadow: none; }
+
+.level-badge { font-size: clamp(20px, 5vmin, 28px); flex-shrink: 0; }
+
+/* GAME SCREEN */
+#screen-game {
+  justify-content: space-between;
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  gap: 2vmin;
+}
+
+.question-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2vmin;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.question-text {
+  font-size: clamp(18px, 5vmin, 32px);
+  font-weight: 900;
+  color: var(--white);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* BOX AREA */
+.box-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5vmin;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.hard-label {
+  font-size: clamp(20px, 5.5vmin, 36px);
+  font-weight: 900;
+  color: var(--white);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.box-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(5px, 1.5vmin, 10px);
+  max-width: min(520px, 92vw);
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.box.filled {
+  background: rgba(255,255,255,0.9);
+  border: 3px solid rgba(255,255,255,0.5);
+}
+
+.box.empty {
+  background: rgba(255,255,255,0.08);
+  border: 3px dashed rgba(255,255,255,0.5);
+}
+
+.box.empty.hidden { display: none; }
+
+.box.fill-in {
+  animation: box-pop 0.35s ease-out;
+}
+@keyframes box-pop {
+  0%   { transform: scale(0.6); opacity: 0.5; }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.box.hint-glow {
+  animation: box-pulse 1.2s ease-in-out infinite;
+  border-color: #FECA57;
+}
+@keyframes box-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(254,202,87,0.7); }
+  50%       { box-shadow: 0 0 0 10px rgba(254,202,87,0); }
+}
+
+/* ANSWER BUTTONS */
+.answer-row {
+  display: flex;
+  gap: clamp(8px, 2.5vmin, 20px);
+  width: 100%;
+  max-width: min(400px, 90vw);
+  flex-shrink: 0;
+}
+
+.answer-btn {
+  touch-action: manipulation;
+  flex: 1;
+  min-height: 88px;
+  border-radius: 20px;
+  font-size: clamp(32px, 11vmin, 68px);
+  font-weight: 900;
+  color: var(--text-dark);
+  background: var(--white);
+  border: 4px solid transparent;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.28);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.answer-btn:active { transform: translateY(4px); box-shadow: none; }
+.answer-btn.disabled { pointer-events: none; }
+
+.answer-btn.correct {
+  animation: btn-bounce 0.5s ease-out;
+  background: #FECA57;
+  border-color: #f39c12;
+}
+@keyframes btn-bounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.25); }
+  60%  { transform: scale(0.95); }
+  80%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.answer-btn.wrong { animation: btn-shake 0.4s ease-out; }
+@keyframes btn-shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-8px); }
+  40%  { transform: translateX(8px); }
+  60%  { transform: translateX(-5px); }
+  80%  { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .answer-btn.correct,
+  .answer-btn.wrong,
+  .box.hint-glow,
+  .box.fill-in {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* landscape small phones */
+@media (orientation: landscape) and (max-height: 500px) {
+  #screen-game { flex-direction: row; flex-wrap: wrap; padding: 6px 12px; gap: 4px; }
+  .question-header { width: 30%; flex-direction: column; justify-content: center; }
+  .box-area { flex: 1; }
+  .answer-row { width: 100%; }
+  .progress-area { width: 100%; padding: 0.2em; }
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="screen-splash" class="screen active">
+  <span class="splash-fox" aria-hidden="true">🔢</span>
+  <div class="splash-title">たりない<br>かず</div>
+</div>
+
+<!-- START SCREEN -->
+<div id="screen-start" class="screen">
+  <span class="character-idle" id="char-start" aria-hidden="true">🦊</span>
+  <div class="app-title">たりない<br>かず</div>
+  <div class="app-subtitle">かくれたかずはなにかな。</div>
+  <button class="btn-primary" id="btn-start" aria-label="はじめる">はじめる</button>
+  <button class="btn-secondary" id="btn-level-select" style="margin-top:0.5em">むずかしさをえらぶ</button>
+  <button class="gear-btn" id="btn-gear" aria-label="せってい">⚙
+    <svg class="gear-ring" viewBox="0 0 54 54" aria-hidden="true">
+      <circle class="gear-ring-fill" cx="27" cy="27" r="27"/>
+    </svg>
+  </button>
+</div>
+
+<!-- LEVEL SELECT SCREEN -->
+<div id="screen-level" class="screen">
+  <button class="home-btn" id="btn-home-level" aria-label="ホームにもどる">🏠</button>
+  <div class="screen-title">むずかしさをえらぼう</div>
+  <div class="level-list" id="level-list"></div>
+  <button class="btn-secondary" id="btn-back-start">もどる</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <button class="home-btn" id="btn-home-game" aria-label="ホームにもどる">🏠</button>
+  <div class="question-header">
+    <span class="question-text">あと いくつかな。</span>
+    <button class="speak-btn" id="btn-speak" aria-label="もういちどよむ">🔊</button>
+    <span class="character-game" id="char-game" aria-hidden="true">🦊</span>
+  </div>
+  <div class="box-area">
+    <div class="hard-label" id="hard-label"></div>
+    <div class="box-row" id="box-row"></div>
+  </div>
+  <div class="answer-row" id="answer-row"></div>
+  <div class="progress-area">
+    <span class="progress-label" id="progress-label">0 / 6</span>
+    <div class="progress-dots" id="progress-dots"></div>
+  </div>
+</div>
+
+<!-- CLEAR SCREEN -->
+<div id="screen-clear" class="screen">
+  <div class="clear-title">すごい！</div>
+  <div class="clear-character" aria-hidden="true">🦊✨</div>
+  <div class="clear-subtitle" id="clear-subtitle">ぜんぶ できたね！</div>
+  <div class="clear-buttons">
+    <button class="btn-primary" id="btn-next" style="width:100%">もういちど</button>
+    <button class="btn-secondary" id="btn-quit" style="width:100%">おわる</button>
+  </div>
+  <div class="confetti-container" id="confetti-container"></div>
+</div>
+
+<!-- PARENT MENU MODAL -->
+<div class="modal-overlay" id="modal-parent">
+  <div class="modal-box">
+    <div class="modal-title">⚙ せってい（おとなむけ）</div>
+    <div class="volume-toggle">
+      <span>おと</span>
+      <button class="toggle-switch on" id="toggle-volume" aria-label="音量切り替え"></button>
+      <span id="volume-label">オン</span>
+    </div>
+    <button class="btn-modal danger" id="btn-reset-confirm">しんちょくをリセット</button>
+    <button class="btn-modal cancel" id="btn-parent-close" style="width:100%">とじる</button>
+    <div class="modal-credit">音声: VOICEVOX / ずんだもん（あまあま）<br>© SSS合同会社</div>
+  </div>
+</div>
+
+<!-- RESET CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal-box">
+    <div class="modal-title">リセットしますか。</div>
+    <div class="modal-body">ゲームのしんちょくが すべてきえます。</div>
+    <div class="modal-row">
+      <button class="btn-modal danger" id="btn-reset-do">リセット</button>
+      <button class="btn-modal cancel" id="btn-reset-cancel">もどる</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/audio-engine.js?v=3"></script>
+<script src="../../shared/audio-player.js?v=3"></script>
+<script src="../../shared/speech.js?v=3"></script>
+<script src="../../shared/game-state.js?v=3"></script>
+<script src="../../shared/ui-common.js?v=3"></script>
+<script>
+'use strict';
+
+// ===== CONSTANTS =====
+
+const LEVELS = [
+  { name: 'かんたん',   emoji: '⭐',       totalMin: 3, totalMax: 6,  missingMin: 1, missingMax: 2, choices: 2, questions: 6, hintAt: 2 },
+  { name: 'ふつう',     emoji: '⭐⭐',     totalMin: 5, totalMax: 8,  missingMin: 1, missingMax: 3, choices: 3, questions: 8, hintAt: 2 },
+  { name: 'むずかしい', emoji: '⭐⭐⭐',   totalMin: 7, totalMax: 10, missingMin: 1, missingMax: 4, choices: 3, questions: 8, hintAt: 3 },
+];
+
+const EMOJI_POOL    = ['🍎','🍌','🍓','🍊','🐶','🐱','🐰','🐼','🌸','🍩','🎈','🚗'];
+const ANSWER_COLORS = ['#FF6B6B','#48DBFB','#1DD1A1'];
+const NEXT_DELAY    = 2000;
+const STORAGE_KEY   = 'tarinai-kazu-v1';
+
+// 全レベルで使う (total, have) の組み合わせ
+const PRELOAD_FILES = [
+  'q_3_1.wav', 'q_3_2.wav',
+  'q_4_2.wav', 'q_4_3.wav',
+  'q_5_2.wav', 'q_5_3.wav', 'q_5_4.wav',
+  'q_6_3.wav', 'q_6_4.wav', 'q_6_5.wav',
+  'q_7_3.wav', 'q_7_4.wav', 'q_7_5.wav', 'q_7_6.wav',
+  'q_8_4.wav', 'q_8_5.wav', 'q_8_6.wav', 'q_8_7.wav',
+  'q_9_5.wav', 'q_9_6.wav', 'q_9_7.wav', 'q_9_8.wav',
+  'q_10_6.wav','q_10_7.wav','q_10_8.wav','q_10_9.wav',
+  '../../shared/audio/se/praise_2.wav',
+  '../../shared/audio/se/praise_3.wav',
+  '../../shared/audio/se/clear.wav',
+];
+
+// ===== GAME STATE =====
+
+const GameState = createGameState(STORAGE_KEY, () => ({
+  currentLevel: 0,
+  clearCounts:  {},
+  totalCorrect: 0,
+}));
+
+let state   = null;
+let session = {};
+
+// ===== UTILITIES =====
+
+function randInt(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ===== QUESTION GENERATOR =====
+
+function makeChoices(correct, count) {
+  const cands = [];
+  for (let d = 1; d <= 6 && cands.length < count * 3; d++) {
+    if (correct - d >= 1)  cands.push(correct - d);
+    if (correct + d <= 10) cands.push(correct + d);
+  }
+  return shuffle([correct, ...shuffle(cands).slice(0, count - 1)]);
+}
+
+function generateQuestion(levelIdx, prevTotal) {
+  const lv = LEVELS[levelIdx];
+  let total, tries = 0;
+  do {
+    total = randInt(lv.totalMin, lv.totalMax);
+    tries++;
+  } while (total === prevTotal && tries < 20);
+
+  const missingMax = Math.min(lv.missingMax, total - 1);
+  const missing    = randInt(lv.missingMin, missingMax);
+  const have       = total - missing;
+  const choices    = makeChoices(missing, lv.choices);
+  const emoji      = pick(EMOJI_POOL);
+  return { total, missing, have, choices, emoji };
+}
+
+// ===== BOX RENDERING =====
+
+function boxSz(total) {
+  if (total <= 5) return 'clamp(52px,12vmin,76px)';
+  if (total <= 7) return 'clamp(44px,10vmin,64px)';
+  return 'clamp(38px,9vmin,56px)';
+}
+
+function boxFs(total) {
+  if (total <= 5) return 'clamp(28px,7vmin,42px)';
+  if (total <= 7) return 'clamp(22px,6vmin,36px)';
+  return 'clamp(18px,5vmin,30px)';
+}
+
+function renderBoxField(q, showEmpty) {
+  const isHard  = state.currentLevel === 2;
+  const hardLbl = document.getElementById('hard-label');
+  const boxRow  = document.getElementById('box-row');
+  const sz      = boxSz(q.total);
+  const fs      = boxFs(q.total);
+
+  hardLbl.style.display = isHard ? '' : 'none';
+  hardLbl.textContent   = isHard ? 'ぜんぶで ' + q.total + ' こ' : '';
+
+  boxRow.innerHTML = '';
+
+  for (let i = 0; i < q.have; i++) {
+    const b = document.createElement('div');
+    b.className = 'box filled';
+    b.style.cssText = 'width:' + sz + ';height:' + sz + ';font-size:' + fs;
+    b.textContent = q.emoji;
+    boxRow.appendChild(b);
+  }
+
+  for (let i = 0; i < q.missing; i++) {
+    const b = document.createElement('div');
+    b.dataset.empty = '1';
+    b.className = 'box empty' + (isHard && !showEmpty ? ' hidden' : '');
+    b.style.cssText = 'width:' + sz + ';height:' + sz;
+    boxRow.appendChild(b);
+  }
+}
+
+// ===== LEVEL SELECT =====
+
+function renderLevelList() {
+  const list = document.getElementById('level-list');
+  list.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const card    = document.createElement('button');
+    const cleared = (state.clearCounts[i] || 0) > 0;
+    card.className = 'level-card';
+    card.innerHTML =
+      '<span class="level-badge">' + lv.emoji + '</span>' +
+      '<span>' + lv.name + (cleared ? ' ⭐' : '') + '</span>';
+    card.addEventListener('click', () => {
+      AudioEngine.playClick();
+      state.currentLevel = i;
+      GameState.save(state);
+      startGame();
+    });
+    list.appendChild(card);
+  });
+  UICommon.showScreen('level');
+}
+
+// ===== GAME LOGIC =====
+
+function startGame() {
+  session = {
+    questionIndex: 0,
+    wrongCount:    0,
+    prevTotal:     null,
+    locked:        false,
+    current:       null,
+    hintShown:     false,
+  };
+  UICommon.showScreen('game');
+  nextQuestion();
+}
+
+function nextQuestion() {
+  const lv = LEVELS[state.currentLevel];
+  session.locked     = false;
+  session.wrongCount = 0;
+  session.hintShown  = false;
+
+  const q = generateQuestion(state.currentLevel, session.prevTotal);
+  session.current   = q;
+  session.prevTotal = q.total;
+
+  UICommon.renderProgress(session.questionIndex, lv.questions);
+  renderBoxField(q, false);
+  renderAnswerBtns(q.choices);
+
+  Speech.speak(
+    'ぜんぶで ' + q.total + ' こ。いま ' + q.have + ' こ。あと いくつ。',
+    'q_' + q.total + '_' + q.have + '.wav'
+  );
+}
+
+function renderAnswerBtns(choices) {
+  const row = document.getElementById('answer-row');
+  row.innerHTML = '';
+  choices.forEach((num, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = num;
+    btn.style.borderColor = ANSWER_COLORS[i % ANSWER_COLORS.length];
+    btn.addEventListener('click', () => onAnswerTap(btn, num));
+    row.appendChild(btn);
+  });
+}
+
+function onAnswerTap(btn, num) {
+  if (session.locked) return;
+  if (num === session.current.missing) onCorrect(btn);
+  else                                  onWrong(btn);
+}
+
+function onCorrect(btn) {
+  session.locked = true;
+  document.querySelectorAll('.answer-btn').forEach(b => b.classList.add('disabled'));
+  btn.classList.add('correct');
+
+  const q  = session.current;
+  const sz = boxSz(q.total);
+  const fs = boxFs(q.total);
+  document.querySelectorAll('[data-empty="1"]').forEach(b => {
+    b.className = 'box filled fill-in';
+    b.style.cssText = 'width:' + sz + ';height:' + sz + ';font-size:' + fs;
+    b.textContent = q.emoji;
+  });
+
+  AudioEngine.playCorrect();
+  UICommon.spawnStars(btn);
+  UICommon.jumpCharacter();
+
+  const praises     = ['できたね。', 'やったね。'];
+  const praiseFiles = [
+    '../../shared/audio/se/praise_2.wav',
+    '../../shared/audio/se/praise_3.wav',
+  ];
+  const idx = Math.floor(Math.random() * 2);
+  Speech.speak(praises[idx], praiseFiles[idx]);
+
+  state.totalCorrect++;
+  session.questionIndex++;
+  const lv = LEVELS[state.currentLevel];
+  UICommon.renderProgress(session.questionIndex, lv.questions);
+
+  if (session.questionIndex >= lv.questions) {
+    if (!state.clearCounts) state.clearCounts = {};
+    state.clearCounts[state.currentLevel] = (state.clearCounts[state.currentLevel] || 0) + 1;
+    GameState.save(state);
+    setTimeout(showClear, NEXT_DELAY);
+  } else {
+    GameState.save(state);
+    setTimeout(nextQuestion, NEXT_DELAY);
+  }
+}
+
+function onWrong(btn) {
+  btn.classList.add('wrong');
+  AudioEngine.playWrong();
+  setTimeout(() => btn.classList.remove('wrong'), 450);
+  session.wrongCount++;
+  const lv = LEVELS[state.currentLevel];
+  if (session.wrongCount >= lv.hintAt && !session.hintShown) showHint();
+}
+
+function showHint() {
+  session.hintShown = true;
+  const isHard = state.currentLevel === 2;
+  if (isHard) {
+    renderBoxField(session.current, true);
+  }
+  document.querySelectorAll('.box.empty').forEach(b => b.classList.add('hint-glow'));
+}
+
+function showClear() {
+  AudioEngine.playClear();
+  Speech.speak('ぜんぶ できたね。', '../../shared/audio/se/clear.wav');
+  UICommon.spawnConfetti();
+  const lv = LEVELS[state.currentLevel];
+  document.getElementById('clear-subtitle').textContent =
+    lv.name + ' ' + session.questionIndex + ' もん ぜんぶ できたね！';
+  UICommon.showScreen('clear');
+}
+
+// ===== EXTRA BUTTONS (UICommon 管理外) =====
+
+document.getElementById('btn-home-level').addEventListener('click', () => {
+  AudioEngine.playClick();
+  UICommon.showScreen('start');
+});
+
+document.getElementById('btn-level-select').addEventListener('click', () => {
+  AudioEngine.resume();
+  AudioPlayer.unlock();
+  Speech.init();
+  state = GameState.load();
+  renderLevelList();
+});
+
+document.getElementById('btn-back-start').addEventListener('click', () => {
+  UICommon.showScreen('start');
+});
+
+// ===== BOOT =====
+state = GameState.load();
+AudioPlayer.preload(PRELOAD_FILES);
+UICommon.init({
+  onStart: () => {
+    state.currentLevel = state.currentLevel || 0;
+    GameState.save(state);
+    startGame();
+  },
+  onSpeakGame: () => {
+    if (!session.current) return;
+    const q = session.current;
+    Speech.speak(
+      'ぜんぶで ' + q.total + ' こ。いま ' + q.have + ' こ。あと いくつ。',
+      'q_' + q.total + '_' + q.have + '.wav'
+    );
+  },
+  onNextClear: () => { startGame(); },
+  onReset:     () => { state = GameState.reset(); },
+  extraScreens: { level: document.getElementById('screen-level') },
+});
+</script>
+</body>
+</html>
