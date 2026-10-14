@@ -50,10 +50,10 @@
   {
     "id": "tarinai-kazu",
     "title": "たりないかず",
-    "subtitle": "かくれたかずはなにかな？",
+    "subtitle": "かくれたかずはなにかな。",
     "emoji": "🔢",
-    "path": null,
-    "status": "coming-soon"
+    "path": "games/tarinai-kazu/",
+    "status": "live"
   },
   {
     "id": "tsugi-wa-naniiro",
