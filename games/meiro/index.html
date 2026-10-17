@@ -84,6 +84,7 @@
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  touch-action: none;
 }
 .maze-wall { background: var(--maze-wall); }
 .maze-open {
@@ -461,6 +462,7 @@ function startGame(age) {
   playerR = 0; playerC = 0;
   goalReached = false;
   moveLocked  = false;
+  _dragRef = null;
 
   renderMaze(maze);
   updateMazeDisplay();
@@ -526,6 +528,70 @@ document.addEventListener('keydown', e => {
   const map = { ArrowUp: [-1,0], ArrowDown: [1,0], ArrowLeft: [0,-1], ArrowRight: [0,1] };
   const d = map[e.key];
   if (d) { e.preventDefault(); AudioEngine.resume(); tryMove(d[0], d[1]); }
+});
+
+// ===== スワイプ操作 (Pointer Events) =====
+var _dragRef = null;
+var _lastSwipeBump = 0;
+var SWIPE_BUMP_COOLDOWN = 400;
+
+function _swipeCellSize() {
+  if (!cellEls) return 48;
+  var r = cellEls[1][1].getBoundingClientRect();
+  return (r.width + r.height) / 2;
+}
+
+var _mazeGrid = document.getElementById('maze-grid');
+
+_mazeGrid.addEventListener('pointerdown', function(e) {
+  if (goalReached || !currentMaze) return;
+  _dragRef = { x: e.clientX, y: e.clientY };
+  try { _mazeGrid.setPointerCapture(e.pointerId); } catch(err) {}
+});
+
+_mazeGrid.addEventListener('pointermove', function(e) {
+  if (!_dragRef || goalReached || !currentMaze) return;
+  var dx = e.clientX - _dragRef.x;
+  var dy = e.clientY - _dragRef.y;
+  var cell = _swipeCellSize();
+  var adx = Math.abs(dx), ady = Math.abs(dy);
+  if (adx < cell && ady < cell) return;
+
+  var dRow = 0, dCol = 0;
+  if (adx >= ady) { dCol = dx > 0 ? 1 : -1; }
+  else            { dRow = dy > 0 ? 1 : -1; }
+
+  _dragRef = { x: e.clientX, y: e.clientY };
+
+  var n = currentMaze.gridSize;
+  var nr = playerR + dRow, nc = playerC + dCol;
+  var blocked = (nr < 0 || nr >= n || nc < 0 || nc >= n);
+  if (!blocked) {
+    var wr = 2 * playerR + 1 + dRow;
+    var wc = 2 * playerC + 1 + dCol;
+    blocked = (currentMaze.cells[wr][wc] === 1);
+  }
+
+  if (blocked) {
+    var now = Date.now();
+    if (now - _lastSwipeBump >= SWIPE_BUMP_COOLDOWN) {
+      _lastSwipeBump = now;
+      AudioEngine.playBump();
+      animateBump(dRow, dCol);
+    }
+  } else {
+    AudioEngine.resume();
+    tryMove(dRow, dCol);
+  }
+});
+
+_mazeGrid.addEventListener('pointerup', function(e) {
+  _dragRef = null;
+  try { _mazeGrid.releasePointerCapture(e.pointerId); } catch(err) {}
+});
+
+_mazeGrid.addEventListener('pointercancel', function(e) {
+  _dragRef = null;
 });
 </script>
 </body>
